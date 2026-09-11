@@ -1,0 +1,3072 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Địa Bàn An Ninh — CA P.An Lạc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    /* ===================================================
+       RESET & BIẾN TOÀN CỤC
+    =================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+      background: #e8edf5;
+      color: #2c3e50;
+    }
+
+    :root {
+      --navy:       #1a2744;
+      --navy-dk:    #0f1c3f;
+      --navy-lt:    #243560;
+      --gold:       #f0c040;
+      --gold-lt:    #ffd960;
+      --white:      #ffffff;
+      --bg:         #e8edf5;
+      --text:       #2c3e50;
+      --text-muted: #7f8c8d;
+      --green:      #27ae60;
+      --blue:       #2980b9;
+      --red:        #e74c3c;
+      --orange:     #e67e22;
+      --gray:       #95a5a6;
+      --shadow:     0 4px 24px rgba(0,0,0,0.10);
+      --shadow-sm:  0 2px 10px rgba(0,0,0,0.07);
+      --r:          10px;
+      --r-sm:       6px;
+      --ease:       all 0.25s ease;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c5cfe0; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9aadcc; }
+
+    /* ===================================================
+       TRANG ĐĂNG NHẬP
+    =================================================== */
+    #login-page {
+      position: fixed; inset: 0; z-index: 1000;
+      background: linear-gradient(135deg, #080f20 0%, #0f1c3f 40%, #1a2744 70%, #243560 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Nền trang trí */
+    #login-page::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(ellipse at 20% 30%, rgba(240,192,64,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(41,128,185,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .login-box {
+      position: relative; z-index: 1;
+      width: 440px;
+      padding: 52px 44px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(240,192,64,0.2);
+      border-radius: 18px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .login-logo { text-align: center; margin-bottom: 36px; }
+
+    .login-shield {
+      width: 84px; height: 84px; margin: 0 auto 18px;
+      background: linear-gradient(145deg, var(--gold), var(--gold-lt));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      box-shadow: 0 0 0 12px rgba(240,192,64,0.10), 0 0 40px rgba(240,192,64,0.30);
+    }
+
+    .login-title {
+      font-size: 21px; font-weight: 800; color: var(--gold);
+      text-transform: uppercase; letter-spacing: 1.5px; line-height: 1.3;
+    }
+    .login-sub {
+      font-size: 12.5px; color: rgba(255,255,255,0.45); margin-top: 7px; letter-spacing: 0.3px;
+    }
+
+    .lg { margin-top: 6px; }
+    .lg label {
+      display: block; font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,0.5); text-transform: uppercase;
+      letter-spacing: 0.8px; margin-bottom: 8px;
+    }
+    .lg input {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--r-sm);
+      color: white; font-size: 14px; font-family: inherit;
+      outline: none; transition: var(--ease);
+    }
+    .lg input:focus {
+      border-color: rgba(240,192,64,0.6);
+      background: rgba(255,255,255,0.10);
+      box-shadow: 0 0 0 3px rgba(240,192,64,0.12);
+    }
+    .lg input::placeholder { color: rgba(255,255,255,0.25); }
+    .login-form { display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
+
+    .login-btn {
+      width: 100%; margin-top: 8px; padding: 15px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-lt));
+      border: none; border-radius: var(--r-sm);
+      color: #0f1c3f; font-size: 14.5px; font-weight: 800;
+      font-family: inherit; cursor: pointer; letter-spacing: 0.8px;
+      text-transform: uppercase; transition: var(--ease);
+    }
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(240,192,64,0.40);
+    }
+    .login-hint { text-align: center; margin-top: 18px; font-size: 11px; color: rgba(255,255,255,0.22); }
+
+    /* ===================================================
+       LAYOUT CHÍNH
+    =================================================== */
+    #app { display: none; height: 100vh; }
+    #app.active { display: block; }
+
+    .layout { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 232px; flex-shrink: 0;
+      background: var(--navy-dk);
+      display: flex; flex-direction: column;
+      border-right: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .sb-logo {
+      padding: 22px 18px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .sb-badge {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-lt));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 10px;
+    }
+    .sb-name { font-size: 12.5px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
+
+    .sb-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+
+    .nav-sec {
+      font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.25);
+      text-transform: uppercase; letter-spacing: 1.2px;
+      padding: 10px 18px 5px;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px; margin: 2px 8px;
+      border-radius: var(--r-sm);
+      cursor: pointer; transition: var(--ease);
+      position: relative;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.05); }
+    .nav-item.active { background: rgba(240,192,64,0.12); }
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: -8px; top: 6px; bottom: 6px;
+      width: 3px; background: var(--gold); border-radius: 0 2px 2px 0;
+    }
+    .nav-icon { font-size: 17px; width: 22px; text-align: center; }
+    .nav-lbl { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6); }
+    .nav-item.active .nav-lbl { color: var(--gold); font-weight: 700; }
+
+    .sb-foot {
+      padding: 14px 18px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sb-av {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--navy-lt);
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+    .sb-uname { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); }
+    .sb-urole { font-size: 10.5px; color: rgba(255,255,255,0.35); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Header ── */
+    .header {
+      height: 58px; background: var(--navy); flex-shrink: 0;
+      display: flex; align-items: center; padding: 0 22px; gap: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .hdr-title { flex: 1; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); }
+    .hdr-title b { color: var(--gold); }
+    .hdr-actions { display: flex; align-items: center; gap: 10px; }
+
+    .hdr-btn {
+      padding: 6px 14px; border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--r-sm); background: transparent;
+      color: rgba(255,255,255,0.65); font-size: 12.5px;
+      cursor: pointer; font-family: inherit; transition: var(--ease);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .hdr-btn:hover { border-color: rgba(240,192,64,0.4); color: var(--gold); }
+
+    .notif-badge {
+      background: var(--red); color: white;
+      border-radius: 10px; padding: 1px 5px;
+      font-size: 10px; font-weight: 700; margin-left: 2px;
+    }
+
+    .hdr-av {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-lt));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; cursor: pointer;
+    }
+
+    .logout-btn {
+      padding: 6px 14px;
+      background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.25);
+      border-radius: var(--r-sm); color: #e74c3c;
+      font-size: 12.5px; cursor: pointer; font-family: inherit; transition: var(--ease);
+    }
+    .logout-btn:hover { background: rgba(231,76,60,0.22); }
+
+    /* ── Nội dung trang ── */
+    .page-wrap { flex: 1; overflow-y: auto; padding: 22px 24px; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .ph { margin-bottom: 20px; }
+    .ph h2 { font-size: 21px; font-weight: 800; color: var(--navy); }
+    .ph p { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ===================================================
+       DASHBOARD
+    =================================================== */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white; border-radius: var(--r); padding: 18px 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer; transition: var(--ease);
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+    .stat-ico {
+      width: 50px; height: 50px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+    .stat-ico.g { background: rgba(39,174,96,0.10); }
+    .stat-ico.b { background: rgba(41,128,185,0.10); }
+    .stat-ico.o { background: rgba(230,126,34,0.10); }
+    .stat-ico.r { background: rgba(231,76,60,0.10); }
+
+    .stat-num { font-size: 30px; font-weight: 800; color: var(--navy); line-height: 1; }
+    .stat-lbl { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+    .stat-chg { font-size: 10.5px; margin-top: 3px; }
+    .stat-chg.up { color: var(--green); }
+    .stat-chg.warn { color: var(--red); }
+    .stat-chg.neu { color: var(--text-muted); }
+
+    .dash-grid { display: grid; grid-template-columns: 55% 1fr; gap: 18px; }
+
+    .card {
+      background: white; border-radius: var(--r); padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-ttl { font-size: 13.5px; font-weight: 700; color: var(--navy); }
+    .card-badge {
+      font-size: 10.5px; padding: 3px 10px; border-radius: 20px;
+      background: rgba(26,39,68,0.07); color: var(--navy); font-weight: 600;
+    }
+
+    /* Recent list */
+    .rc-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid #f0f2f5;
+      cursor: pointer; transition: var(--ease);
+    }
+    .rc-item:last-child { border-bottom: none; }
+    .rc-item:hover { opacity: 0.8; }
+    .rc-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .rc-main { font-size: 12.5px; font-weight: 600; color: var(--text); }
+    .rc-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .rc-time { margin-left: auto; font-size: 10.5px; color: var(--text-muted); white-space: nowrap; padding-left: 8px; }
+
+    /* Donut chart info */
+    .donut-row { display: flex; align-items: center; gap: 20px; }
+    .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .dl-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .dl-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .dl-lbl { flex: 1; color: var(--text-muted); }
+    .dl-val { font-weight: 700; color: var(--navy); }
+
+    /* ===================================================
+       BẢN ĐỒ SƠ ĐỒ
+    =================================================== */
+    .map-toolbar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+
+    .srch-box { position: relative; flex: 1; max-width: 360px; }
+    .srch-box input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border: 1px solid #d5dde8; border-radius: var(--r-sm);
+      background: white; font-size: 13px; font-family: inherit; color: var(--text);
+      outline: none; transition: var(--ease); box-shadow: var(--shadow-sm);
+    }
+    .srch-box input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(26,39,68,0.07); }
+    .srch-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+
+    .flt-btn {
+      padding: 9px 14px; border: 1px solid #d5dde8;
+      border-radius: var(--r-sm); background: white;
+      font-size: 12.5px; cursor: pointer; font-family: inherit;
+      transition: var(--ease); color: var(--text);
+      display: flex; align-items: center; gap: 5px;
+      box-shadow: var(--shadow-sm);
+    }
+    .flt-btn:hover, .flt-btn.on { border-color: var(--navy); color: var(--navy); background: rgba(26,39,68,0.04); }
+
+    .map-wrap {
+      background: white; border-radius: var(--r); padding: 22px 24px;
+      box-shadow: var(--shadow-sm); overflow-x: auto;
+    }
+
+    .map-canvas { min-width: 820px; }
+
+    /* Khối đường phố */
+    .st-block { margin-bottom: 34px; }
+    .st-side-lbl { font-size: 10.5px; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+
+    .house-row { display: flex; gap: 10px; align-items: flex-end; padding: 4px 0; flex-wrap: nowrap; }
+    .house-row.top { align-items: flex-start; }
+
+    /* Dải đường */
+    .road-strip {
+      height: 40px; border-radius: 5px; margin: 3px 0;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      background: linear-gradient(180deg, #6b7d92, #5a6e83, #6b7d92);
+    }
+    .road-strip::before {
+      content: '';
+      position: absolute; left: 0; right: 0; top: 50%;
+      border-top: 2px dashed rgba(255,255,255,0.5);
+    }
+    .road-name {
+      font-size: 11.5px; font-weight: 800; color: white;
+      text-transform: uppercase; letter-spacing: 2px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.25); padding: 4px 18px; border-radius: 4px;
+      position: relative; z-index: 1;
+    }
+
+    /* Dải công viên */
+    .park-strip {
+      height: 36px; border-radius: 5px; margin: 3px 0;
+      background: linear-gradient(90deg, #d4edda, #c3e6cb, #d4edda);
+      border: 1.5px dashed #a8d5b5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: #27ae60; font-weight: 500; letter-spacing: 0.5px;
+    }
+
+    /* Ô nhà */
+    .hcard {
+      width: 88px; min-height: 84px; border-radius: 8px;
+      padding: 9px 6px 8px; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      cursor: pointer; transition: all 0.18s ease;
+      border: 2px solid transparent; text-align: center;
+      position: relative;
+    }
+    .hcard:hover { transform: translateY(-5px) scale(1.05); z-index: 20; }
+
+    .hcard.hn  { background: #eafaf1; border-color: #27ae60; }
+    .hcard.hb  { background: #ebf5fb; border-color: #2980b9; }
+    .hcard.hw  { background: #fdf2f2; border-color: #e74c3c; }
+    .hcard.hu  { background: #f2f3f4; border-color: #aab3bc; }
+
+    .hcard.hn:hover  { box-shadow: 0 8px 24px rgba(39,174,96,0.28); }
+    .hcard.hb:hover  { box-shadow: 0 8px 24px rgba(41,128,185,0.28); }
+    .hcard.hw:hover  { box-shadow: 0 8px 24px rgba(231,76,60,0.28); }
+    .hcard.hu:hover  { box-shadow: 0 8px 24px rgba(149,165,166,0.20); }
+
+    .hcard.hl {
+      outline: 3px solid var(--gold); outline-offset: 3px;
+      animation: hpulse 1.4s infinite;
+    }
+    @keyframes hpulse {
+      0%, 100% { outline-offset: 3px; }
+      50%       { outline-offset: 6px; }
+    }
+
+    .hcard-ico { font-size: 26px; line-height: 1; }
+    .hcard-no  { font-size: 11.5px; font-weight: 800; color: var(--navy); }
+    .hcard-own { font-size: 9.5px; color: var(--text-muted); max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .hbadge {
+      position: absolute; top: -7px; right: -7px;
+      width: 19px; height: 19px; border-radius: 50%;
+      font-size: 9px; display: flex; align-items: center; justify-content: center;
+      border: 2px solid white;
+    }
+    .hbadge.tt { background: var(--orange); color: white; }
+    .hbadge.tv { background: var(--gray);   color: white; }
+
+    .map-legend {
+      display: flex; gap: 18px; flex-wrap: wrap;
+      margin-top: 18px; padding-top: 14px;
+      border-top: 1px solid #eee;
+    }
+    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); }
+    .leg-clr { width: 12px; height: 12px; border-radius: 3px; }
+    .leg-clr.g { background: #27ae60; }
+    .leg-clr.b { background: #2980b9; }
+    .leg-clr.r { background: #e74c3c; }
+    .leg-clr.x { background: #aab3bc; }
+
+    /* ===================================================
+       DANH SÁCH HỘ DÂN
+    =================================================== */
+    .list-toolbar {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      padding: 10px 20px; background: var(--navy); color: white;
+      border: none; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer;
+      transition: var(--ease); display: flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { background: var(--navy-lt); transform: translateY(-1px); }
+
+    .sel {
+      padding: 9px 12px; border: 1px solid #d5dde8;
+      border-radius: var(--r-sm); background: white;
+      font-size: 13px; font-family: inherit; color: var(--text);
+      outline: none; cursor: pointer; box-shadow: var(--shadow-sm);
+    }
+
+    .tbl-wrap { background: white; border-radius: var(--r); box-shadow: var(--shadow-sm); overflow: hidden; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--navy); }
+    thead th {
+      padding: 13px 14px; text-align: left;
+      font-size: 11px; font-weight: 700;
+      color: rgba(255,255,255,0.80); text-transform: uppercase; letter-spacing: 0.6px;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f0f2f5; transition: var(--ease); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f7f9fc; }
+    tbody td { padding: 11px 14px; font-size: 12.5px; color: var(--text); vertical-align: middle; }
+
+    .tbadge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .tbadge.g { background: rgba(39,174,96,0.10);  color: #27ae60; }
+    .tbadge.b { background: rgba(41,128,185,0.10);  color: #2980b9; }
+    .tbadge.r { background: rgba(231,76,60,0.10);   color: #e74c3c; }
+    .tbadge.x { background: rgba(149,165,166,0.10); color: #7f8c8d; }
+
+    .act-btn {
+      padding: 5px 11px; border: 1px solid #d5dde8;
+      border-radius: var(--r-sm); background: transparent;
+      font-size: 11.5px; cursor: pointer; font-family: inherit;
+      transition: var(--ease); color: var(--text); margin-right: 4px;
+    }
+    .act-btn:hover { border-color: var(--navy); color: var(--navy); }
+    .act-btn.edit:hover { border-color: #b58a10; color: #b58a10; }
+
+    /* ===================================================
+       CÀI ĐẶT
+    =================================================== */
+    .set-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+    .set-card { background: white; border-radius: var(--r); padding: 22px; box-shadow: var(--shadow-sm); }
+    .set-ttl {
+      font-size: 14px; font-weight: 700; color: var(--navy);
+      margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #f0f2f5;
+    }
+    .set-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 0; border-bottom: 1px solid #f8fafc; font-size: 12.5px;
+    }
+    .set-row:last-child { border-bottom: none; }
+
+    .toggle {
+      width: 42px; height: 23px; border-radius: 12px;
+      background: #cdd5de; position: relative; cursor: pointer; transition: var(--ease); flex-shrink: 0;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: ''; position: absolute;
+      width: 17px; height: 17px; background: white;
+      border-radius: 50%; top: 3px; left: 3px;
+      transition: var(--ease); box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    .toggle.on::after { transform: translateX(19px); }
+
+    /* ===================================================
+       MODAL / POPUP
+    =================================================== */
+    .overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.58);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden; transition: all 0.28s ease;
+    }
+    .overlay.on { opacity: 1; visibility: visible; }
+
+    .modal {
+      background: white; border-radius: 14px;
+      width: 640px; max-width: 96vw; max-height: 92vh;
+      overflow: hidden; display: flex; flex-direction: column;
+      transform: translateY(28px) scale(0.94);
+      transition: all 0.28s ease;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    }
+    .overlay.on .modal { transform: translateY(0) scale(1); }
+    .modal.sm { width: 560px; }
+
+    .modal-hdr {
+      background: var(--navy); padding: 18px 22px;
+      display: flex; align-items: flex-start; gap: 14px; flex-shrink: 0;
+    }
+    .mh-ico {
+      width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+    .mh-addr { font-size: 17px; font-weight: 800; color: white; }
+    .mh-type { font-size: 11.5px; color: rgba(255,255,255,0.55); margin-top: 4px; }
+    .mh-info { flex: 1; }
+
+    .m-close {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.18); background: transparent;
+      color: rgba(255,255,255,0.65); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: var(--ease);
+    }
+    .m-close:hover { background: rgba(255,255,255,0.10); color: white; }
+
+    .modal-body { flex: 1; overflow-y: auto; }
+
+    .m-sec { padding: 16px 22px; border-bottom: 1px solid #f0f2f5; }
+    .m-sec:last-child { border-bottom: none; }
+    .m-stl {
+      font-size: 10.5px; font-weight: 800; color: var(--navy);
+      text-transform: uppercase; letter-spacing: 1.2px;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 5px;
+    }
+
+    .info-g { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+    .info-i .lbl { font-size: 10.5px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; }
+    .info-i .val { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    .mem-list { display: flex; flex-direction: column; gap: 7px; }
+    .mem-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; background: #f7f9fc; border-radius: 7px;
+    }
+    .mem-av {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--navy-lt); display: flex; align-items: center;
+      justify-content: center; font-size: 13px; color: white; flex-shrink: 0;
+    }
+    .mem-nm { font-size: 12.5px; font-weight: 600; }
+    .mem-rl { font-size: 10.5px; color: var(--text-muted); }
+
+    .warn-box {
+      background: rgba(231,76,60,0.07);
+      border: 1px solid rgba(231,76,60,0.20);
+      border-radius: 8px; padding: 11px 14px;
+      font-size: 12.5px; color: #c0392b; line-height: 1.65;
+    }
+
+    .biz-box {
+      background: rgba(41,128,185,0.05);
+      border: 1px solid rgba(41,128,185,0.15);
+      border-radius: 8px; padding: 14px;
+    }
+
+    .modal-ftr {
+      padding: 14px 22px; border-top: 1px solid #f0f2f5;
+      display: flex; gap: 8px; justify-content: flex-end;
+      background: #fafbfc; flex-shrink: 0;
+    }
+
+    .btn-out {
+      padding: 8px 18px; border: 1px solid #d5dde8;
+      border-radius: var(--r-sm); background: white;
+      font-size: 12.5px; font-weight: 500; font-family: inherit;
+      cursor: pointer; color: var(--text); transition: var(--ease);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-out:hover { border-color: var(--navy); color: var(--navy); }
+
+    .btn-gold {
+      padding: 8px 18px; background: var(--gold);
+      border: none; border-radius: var(--r-sm);
+      font-size: 12.5px; font-weight: 700; font-family: inherit;
+      cursor: pointer; color: #0f1c3f; transition: var(--ease);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .btn-gold:hover { background: var(--gold-lt); transform: translateY(-1px); }
+
+    /* Form trong modal sửa */
+    .fm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .fm-grp label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--text); text-transform: uppercase; letter-spacing: 0.4px;
+      margin-bottom: 5px;
+    }
+    .fm-grp input,
+    .fm-grp select,
+    .fm-grp textarea {
+      width: 100%; padding: 9px 11px;
+      border: 1px solid #d5dde8; border-radius: var(--r-sm);
+      font-size: 12.5px; font-family: inherit; color: var(--text);
+      outline: none; transition: var(--ease); background: white;
+    }
+    .fm-grp input:focus,
+    .fm-grp select:focus,
+    .fm-grp textarea:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(26,39,68,0.06);
+    }
+    .fm-full { grid-column: 1 / -1; }
+
+    /* ===================================================
+       TOAST NOTIFICATION
+    =================================================== */
+    .toast {
+      position: fixed; bottom: 22px; right: 22px; z-index: 9999;
+      padding: 13px 18px; background: var(--navy); color: white;
+      border-radius: var(--r-sm); font-size: 13px; font-weight: 500;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+      display: flex; align-items: center; gap: 8px;
+      transform: translateY(18px); opacity: 0; transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.ok   { border-left: 4px solid var(--green); }
+    .toast.warn { border-left: 4px solid var(--gold); }
+    .toast.err  { border-left: 4px solid var(--red); }
+
+    /* ===================================================
+       BẢN ĐỒ NÂNG CAO
+    =================================================== */
+    .adv-wrap {
+      border-radius: var(--r); overflow: hidden;
+      box-shadow: var(--shadow); position: relative;
+      border: 1px solid #d5dde8;
+    }
+    .adv-svg-container {
+      width: 100%; height: 560px; overflow: hidden;
+      cursor: grab; position: relative; background: #f5f3ef;
+      user-select: none; -webkit-user-select: none;
+    }
+    .adv-svg-container:active { cursor: grabbing; }
+    .adv-svg-container.sat { background: #1a221a; }
+    #advMapTransform { transform-origin: 0 0; will-change: transform; display: inline-block; }
+    #advSvg { display: block; }
+    .adv-bld { cursor: pointer; }
+    .adv-bld { transition: filter 0.15s ease; }
+    .adv-bld:hover { filter: brightness(1.12) saturate(1.15) drop-shadow(0 0 6px rgba(240,192,64,0.6)); }
+    .adv-bld.bhl { filter: drop-shadow(0 0 8px rgba(240,192,64,0.9)); animation: bhlPulse 1.4s infinite; }
+    @keyframes bhlPulse {
+      0%,100% { filter: drop-shadow(0 0 5px rgba(240,192,64,0.7)); }
+      50%      { filter: drop-shadow(0 0 14px rgba(240,192,64,1)); }
+    }
+    .adv-compass {
+      position: absolute; top: 12px; left: 12px; z-index: 10;
+      background: rgba(255,255,255,0.92); border: 1px solid #d5dde8;
+      border-radius: 50%; width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-sm); font-size: 22px; pointer-events: none;
+    }
+    .adv-ctrl-group {
+      position: absolute; top: 12px; right: 12px; z-index: 10;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .adv-ctrl-btn {
+      width: 32px; height: 32px; background: rgba(255,255,255,0.92);
+      border: 1px solid #d5dde8; border-radius: 5px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: bold; line-height: 1;
+      box-shadow: var(--shadow-sm); transition: var(--ease); user-select: none;
+    }
+    .adv-ctrl-btn:hover { background: var(--navy); color: white; border-color: var(--navy); }
+    .mtype-wrap {
+      display: flex; background: white; border: 1px solid #d5dde8;
+      border-radius: var(--r-sm); overflow: hidden; box-shadow: var(--shadow-sm);
+    }
+    .mtype-btn {
+      padding: 9px 16px; border: none; border-right: 1px solid #d5dde8;
+      background: white; font-size: 12.5px; font-weight: 500;
+      font-family: inherit; cursor: pointer; color: var(--text);
+      transition: var(--ease); white-space: nowrap;
+    }
+    .mtype-btn:last-child { border-right: none; }
+    .mtype-btn.on { background: var(--navy); color: white; font-weight: 700; }
+    .mtype-btn:hover:not(.on) { background: rgba(26,39,68,0.06); }
+    .zoom-grp { display: flex; gap: 4px; }
+    .zoom-btn {
+      width: 34px; height: 34px; border: 1px solid #d5dde8;
+      border-radius: var(--r-sm); background: white; cursor: pointer;
+      font-size: 18px; font-weight: bold; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-sm); transition: var(--ease); user-select: none;
+    }
+    .zoom-btn:hover { background: var(--navy); color: white; border-color: var(--navy); }
+
+    /* ─── BẢN ĐỒ THỰC ĐỊA (Leaflet) ─── */
+    .fm-layout {
+      display: flex; height: 560px;
+      border-radius: var(--r); overflow: hidden;
+      box-shadow: var(--shadow); border: 1px solid #d5dde8;
+    }
+    .fm-panel {
+      width: 280px; min-width: 280px; background: white;
+      border-right: 1px solid #e0e6f0;
+      display: flex; flex-direction: column;
+      transition: width 0.3s ease, min-width 0.3s ease;
+      overflow: hidden;
+    }
+    .fm-panel.collapsed { width: 0; min-width: 0; }
+    .fm-panel-inner { width: 280px; display: flex; flex-direction: column; height: 100%; }
+    .fm-filter-box { padding: 12px; border-bottom: 1px solid #eef2f8; flex-shrink: 0; }
+    .fm-filter-title { font-size: 11px; font-weight: 700; color: #9aa0b0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .fm-radio-group { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .fm-radio-group label { font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; color: #4a5568; }
+    .fm-panel-search { width: 100%; padding: 7px 10px; border: 1px solid #d5dde8; border-radius: 6px; font-size: 12.5px; outline: none; font-family: inherit; }
+    .fm-panel-search:focus { border-color: var(--navy); }
+    .fm-list-hdr { padding: 8px 12px; font-size: 11.5px; font-weight: 700; color: #6b7280; border-bottom: 1px solid #eef2f8; flex-shrink: 0; }
+    .fm-list { flex: 1; overflow-y: auto; }
+    .fm-list-item {
+      padding: 9px 12px; cursor: pointer; border-bottom: 1px solid #f0f4fb;
+      display: flex; align-items: center; gap: 8px;
+      transition: background 0.15s;
+    }
+    .fm-list-item:hover { background: #f5f7ff; }
+    .fm-list-item.active { background: rgba(240,192,64,0.1); }
+    .fm-li-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .fm-li-body { flex: 1; min-width: 0; }
+    .fm-li-addr { font-size: 12.5px; font-weight: 700; color: #1a2744; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fm-li-sub  { font-size: 11px; color: #6b7280; }
+    .fm-li-go   { font-size: 12px; padding: 3px 7px; background: white; border: 1px solid #d5dde8; border-radius: 5px; cursor: pointer; transition: var(--ease); flex-shrink: 0; }
+    .fm-li-go:hover { background: var(--navy); color: white; border-color: var(--navy); }
+    /* Map area */
+    .fm-map-area { flex: 1; position: relative; background: #e8e4dc; }
+    #fmMap { width: 100%; height: 100%; }
+    /* Toolbar */
+    .fm-toolbar {
+      position: absolute; top: 10px; left: 10px; right: 10px;
+      z-index: 1000; display: flex; gap: 5px; flex-wrap: wrap; align-items: center;
+      pointer-events: none;
+    }
+    .fm-toolbar > * { pointer-events: all; }
+    .fm-tb-search {
+      flex: 1; min-width: 140px; max-width: 200px;
+      padding: 6px 10px; border: none; border-radius: 6px;
+      font-size: 12.5px; font-family: inherit; outline: none;
+      background: rgba(255,255,255,0.97); box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    }
+    .fm-tb-select {
+      padding: 6px 8px; border: none; border-radius: 6px; font-size: 12px;
+      font-family: inherit; background: rgba(255,255,255,0.97);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.2); cursor: pointer; outline: none;
+    }
+    .fm-tb-btn {
+      padding: 6px 10px; border: none; border-radius: 6px; font-size: 12px;
+      font-family: inherit; cursor: pointer; font-weight: 600;
+      background: rgba(255,255,255,0.97); box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+      transition: var(--ease); white-space: nowrap;
+    }
+    .fm-tb-btn:hover { background: var(--navy); color: white; }
+    .fm-tb-btn.tog-off { background: rgba(255,255,255,0.5); opacity: 0.65; }
+    /* Legend */
+    .fm-legend {
+      position: absolute; bottom: 28px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.96); border: 1px solid #d5dde8;
+      border-radius: 8px; padding: 10px 13px; min-width: 170px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.14); font-size: 12px;
+    }
+    .fm-legend-title { font-size: 11px; font-weight: 800; color: var(--navy); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .fm-legend-item { display: flex; align-items: center; gap: 6px; padding: 4px 0; cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+    .fm-legend-item:hover { background: #f0f4ff; padding-left: 3px; }
+    .fm-legend-item.hidden-group { opacity: 0.4; }
+    .fm-leg-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .fm-legend-item span { flex: 1; color: #4a5568; }
+    .fm-legend-item strong { color: var(--navy); min-width: 24px; text-align: right; }
+    .fm-legend-sep { height: 1px; background: #e8edf5; margin: 6px 0; }
+    .fm-legend-total { font-size: 12px; font-weight: 700; color: var(--navy); text-align: right; }
+    /* Loading */
+    .fm-loading {
+      position: absolute; inset: 0; background: #e8e4dc;
+      z-index: 2000; display: flex; align-items: center; justify-content: center;
+    }
+    .fm-loading-inner { text-align: center; }
+    .fm-spinner {
+      width: 44px; height: 44px; border: 4px solid rgba(26,39,68,0.15);
+      border-top-color: var(--navy); border-radius: 50%;
+      animation: fmSpin 0.75s linear infinite; margin: 0 auto 14px;
+    }
+    @keyframes fmSpin { to { transform: rotate(360deg); } }
+    .fm-loading-txt { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 12px; }
+    .fm-progress-bar { width: 180px; height: 5px; background: rgba(26,39,68,0.12); border-radius: 10px; overflow: hidden; }
+    .fm-progress-fill { height: 100%; background: var(--navy); border-radius: 10px; width: 0; transition: width 0.15s linear; }
+    /* Leaflet popup custom */
+    .fm-popup { font-family: 'Be Vietnam Pro', sans-serif; min-width: 220px; }
+    .fm-popup-hdr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 6px 6px 0 0; margin: -8px -12px 10px; }
+    .fm-popup-ico { font-size: 22px; }
+    .fm-popup-title { font-size: 13.5px; font-weight: 800; color: white; flex: 1; }
+    .fm-popup-row { display: flex; gap: 6px; align-items: flex-start; padding: 3px 0; font-size: 12.5px; }
+    .fm-popup-lbl { color: #6b7280; min-width: 80px; flex-shrink: 0; }
+    .fm-popup-val { font-weight: 600; color: #1a2744; }
+    .fm-popup-sep { height: 1px; background: #e8edf5; margin: 8px 0; }
+    .fm-popup-btns { display: flex; gap: 8px; padding-top: 4px; }
+    .fm-popup-btn { flex: 1; padding: 7px; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; transition: var(--ease); }
+    .fm-popup-btn.primary { background: var(--navy); color: white; }
+    .fm-popup-btn.primary:hover { background: var(--navy-lt); }
+    .fm-popup-btn.secondary { background: #f0f4ff; color: var(--navy); }
+    .fm-popup-btn.secondary:hover { background: #e0e8ff; }
+    /* Add location modal */
+    .fm-add-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .fm-add-modal.open { display: flex; }
+    .fm-add-box { background: white; border-radius: 12px; padding: 24px; width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+    .fm-add-title { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 16px; }
+    .fm-add-field { margin-bottom: 12px; }
+    .fm-add-field label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+    .fm-add-field input, .fm-add-field select, .fm-add-field textarea {
+      width: 100%; padding: 8px 10px; border: 1px solid #d5dde8; border-radius: 6px;
+      font-family: inherit; font-size: 13px; outline: none;
+    }
+    .fm-add-field input:focus, .fm-add-field select:focus { border-color: var(--navy); }
+    .fm-add-btns { display: flex; gap: 10px; margin-top: 16px; }
+    /* Cluster circle */
+    .fm-cluster-circle {
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-family: inherit; border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;
+    }
+    /* Stats tooltip */
+    .fm-stats-box {
+      position: absolute; top: 55px; right: 10px; z-index: 1001;
+      background: rgba(255,255,255,0.97); border: 1px solid #d5dde8;
+      border-radius: 8px; padding: 12px 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      display: none; min-width: 200px;
+    }
+    .fm-stats-box.open { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fmBlink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.2; }
+    }
+    .fm-pulse { animation: fmBlink 0.45s ease 3; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     TRANG ĐĂNG NHẬP
+════════════════════════════════════════ -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-shield">🛡️</div>
+      <div class="login-title">Quản Lý Địa Bàn<br>An Ninh</div>
+      <div class="login-sub">Hệ thống QLHD — Công an Phường An Lạc, Q.Bình Tân</div>
+    </div>
+    <form class="login-form" onsubmit="doLogin(event)">
+      <div class="lg">
+        <label>Tài khoản đăng nhập</label>
+        <input type="text" id="un" placeholder="VD: cskv_nguyen" value="cskv_binh" autocomplete="username">
+      </div>
+      <div class="lg">
+        <label>Mật khẩu</label>
+        <input type="password" id="pw" placeholder="Nhập mật khẩu..." value="password123" autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn">🔓 &nbsp;Đăng Nhập Hệ Thống</button>
+    </form>
+    <p class="login-hint">Demo: nhấn Đăng nhập với bất kỳ tài khoản/mật khẩu nào</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     ỨNG DỤNG CHÍNH
+════════════════════════════════════════ -->
+<div id="app">
+  <div class="layout">
+
+    <!-- ─── SIDEBAR ─── -->
+    <aside class="sidebar">
+      <div class="sb-logo">
+        <div class="sb-badge">🛡️</div>
+        <div class="sb-name">Địa Bàn<br>An Ninh</div>
+      </div>
+      <nav class="sb-nav">
+        <div class="nav-sec">Chức năng</div>
+        <div class="nav-item" id="nav-dashboard" onclick="goPage('dashboard')">
+          <span class="nav-icon">📊</span><span class="nav-lbl">Tổng quan</span>
+        </div>
+        <div class="nav-item active" id="nav-map" onclick="goPage('map')">
+          <span class="nav-icon">🗺️</span><span class="nav-lbl">Sơ đồ địa bàn</span>
+        </div>
+        <div class="nav-item" id="nav-list" onclick="goPage('list')">
+          <span class="nav-icon">📋</span><span class="nav-lbl">Danh sách hộ dân</span>
+        </div>
+        <div class="nav-item" id="nav-advmap" onclick="goPage('advmap')">
+          <span class="nav-icon">🛰️</span><span class="nav-lbl">Bản đồ nâng cao</span>
+        </div>
+        <div class="nav-item" id="nav-fieldmap" onclick="goPage('fieldmap')">
+          <span class="nav-icon">🗺️</span><span class="nav-lbl">Bản đồ Thực địa</span>
+        </div>
+        <div class="nav-sec">Hệ thống</div>
+        <div class="nav-item" id="nav-settings" onclick="goPage('settings')">
+          <span class="nav-icon">⚙️</span><span class="nav-lbl">Cài đặt</span>
+        </div>
+      </nav>
+      <div class="sb-foot">
+        <div class="sb-av">👮</div>
+        <div>
+          <div class="sb-uname">Nguyễn Văn Bình</div>
+          <div class="sb-urole">CSKV — P.An Lạc</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ─── PHẦN CHÍNH ─── -->
+    <main class="main">
+      <!-- Header -->
+      <header class="header">
+        <div class="hdr-title">
+          Công an Phường An Lạc — <b>Q.Bình Tân, TP.HCM</b>
+        </div>
+        <div class="hdr-actions">
+          <button class="hdr-btn" onclick="toast('3 thông báo mới cần xử lý!','warn')">
+            🔔 Thông báo <span class="notif-badge">3</span>
+          </button>
+          <div class="hdr-av" title="Nguyễn Văn Bình">👮</div>
+          <button class="logout-btn" onclick="doLogout()">⏏ Đăng xuất</button>
+        </div>
+      </header>
+
+      <!-- Nội dung -->
+      <div class="page-wrap">
+
+        <!-- ─ DASHBOARD ─ -->
+        <div class="page" id="page-dashboard">
+          <div class="ph">
+            <h2>📊 Tổng quan địa bàn</h2>
+            <p>Cập nhật: 11/09/2026 07:00 &nbsp;|&nbsp; CSKV Nguyễn Văn Bình &nbsp;|&nbsp; Phường An Lạc, Q.Bình Tân</p>
+          </div>
+
+          <!-- Thẻ thống kê -->
+          <div class="stats-grid">
+            <div class="stat-card" onclick="goPage('list')">
+              <div class="stat-ico g">🏘️</div>
+              <div>
+                <div class="stat-num">16</div>
+                <div class="stat-lbl">Tổng hộ / Cơ sở</div>
+                <div class="stat-chg up">▲ +1 so với tháng trước</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="goPage('list')">
+              <div class="stat-ico b">🏢</div>
+              <div>
+                <div class="stat-num">3</div>
+                <div class="stat-lbl">Cơ sở kinh doanh</div>
+                <div class="stat-chg neu">→ Không thay đổi</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="goPage('list')">
+              <div class="stat-ico o">🧳</div>
+              <div>
+                <div class="stat-num">4</div>
+                <div class="stat-lbl">Người tạm trú</div>
+                <div class="stat-chg up">▲ +1 người mới (chưa XM)</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="goPage('list')">
+              <div class="stat-ico r">⚠️</div>
+              <div>
+                <div class="stat-num">1</div>
+                <div class="stat-lbl">Đối tượng cần chú ý</div>
+                <div class="stat-chg warn">⚡ Cần kiểm tra định kỳ</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Biểu đồ + Cập nhật gần đây -->
+          <div class="dash-grid">
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-ttl">📈 Phân loại hộ theo tuyến đường</div>
+                <div class="card-badge">T9/2026</div>
+              </div>
+              <svg id="svgChart" width="100%" viewBox="0 0 520 210" style="overflow:visible;"></svg>
+            </div>
+            <div class="card">
+              <div class="card-hdr">
+                <div class="card-ttl">🕐 Cập nhật gần đây</div>
+                <div class="card-badge">5 mục</div>
+              </div>
+              <div id="recentList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─ BẢN ĐỒ ─ -->
+        <div class="page active" id="page-map">
+          <div class="ph">
+            <h2>🗺️ Sơ đồ địa bàn</h2>
+            <p>Phường An Lạc — Q.Bình Tân, TP.HCM &nbsp;|&nbsp; Click vào ô nhà để xem chi tiết đầy đủ</p>
+          </div>
+
+          <div class="map-toolbar">
+            <div class="srch-box">
+              <span class="srch-icon">🔍</span>
+              <input type="text" id="mapSearch" placeholder="Tìm số nhà, tên chủ hộ, tên đường…" oninput="searchMap(this.value)">
+            </div>
+            <button class="flt-btn on" id="fb-all"     onclick="setFilter('all')">🏘️ Tất cả</button>
+            <button class="flt-btn"    id="fb-ho_dan"  onclick="setFilter('ho_dan')">🏠 Hộ dân</button>
+            <button class="flt-btn"    id="fb-co_so_kd" onclick="setFilter('co_so_kd')">🏢 Kinh doanh</button>
+            <button class="flt-btn"    id="fb-chu_y"   onclick="setFilter('chu_y')">⚠️ Cần chú ý</button>
+          </div>
+
+          <div class="map-wrap">
+            <div class="map-canvas" id="mapCanvas"></div>
+            <div class="map-legend">
+              <div class="leg-item"><div class="leg-clr g"></div> Hộ dân bình thường</div>
+              <div class="leg-item"><div class="leg-clr b"></div> Cơ sở kinh doanh</div>
+              <div class="leg-item"><div class="leg-clr r"></div> Cần chú ý / Theo dõi</div>
+              <div class="leg-item"><div class="leg-clr x"></div> Chưa có thông tin</div>
+              <div class="leg-item">🔔 = Tạm trú</div>
+              <div class="leg-item">📤 = Tạm vắng</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─ DANH SÁCH ─ -->
+        <div class="page" id="page-list">
+          <div class="ph">
+            <h2>📋 Danh sách hộ dân</h2>
+            <p>Toàn bộ hộ dân và cơ sở kinh doanh trên địa bàn quản lý</p>
+          </div>
+          <div class="list-toolbar">
+            <div class="srch-box">
+              <span class="srch-icon">🔍</span>
+              <input type="text" id="listSearch" placeholder="Tìm kiếm…" oninput="renderList()">
+            </div>
+            <select class="sel" id="listFilter" onchange="renderList()">
+              <option value="">-- Tất cả loại --</option>
+              <option value="ho_dan">🏠 Hộ dân</option>
+              <option value="co_so_kd">🏢 Cơ sở KD</option>
+              <option value="chu_y">⚠️ Cần chú ý</option>
+              <option value="chua_co_tt">❓ Chưa có TT</option>
+            </select>
+            <button class="btn-primary" onclick="openAdd()">➕ Thêm hộ mới</button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Số nhà</th>
+                  <th>Tuyến đường</th>
+                  <th>Chủ hộ / Đơn vị</th>
+                  <th>Loại</th>
+                  <th style="text-align:center">Nhân khẩu</th>
+                  <th style="text-align:center">Tạm trú</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="listTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ─ CÀI ĐẶT ─ -->
+        <div class="page" id="page-settings">
+          <div class="ph">
+            <h2>⚙️ Cài đặt hệ thống</h2>
+            <p>Quản lý tài khoản, thông báo và tùy chỉnh giao diện</p>
+          </div>
+          <div class="set-grid">
+            <div class="set-card">
+              <div class="set-ttl">👤 Thông tin tài khoản</div>
+              <div style="text-align:center;padding:14px 0 18px">
+                <div style="width:68px;height:68px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 10px">👮</div>
+                <div style="font-weight:800;font-size:15px">Nguyễn Văn Bình</div>
+                <div style="color:var(--text-muted);font-size:12px;margin-top:3px">Cảnh sát khu vực — P.An Lạc, Q.Bình Tân</div>
+                <div style="color:var(--text-muted);font-size:11px;margin-top:2px">Mã hiệu: CSKV-BT-024</div>
+              </div>
+              <div class="set-row"><span>📧 Email</span><span style="color:var(--text-muted);font-size:12px">nvbinh@congan.hcm.vn</span></div>
+              <div class="set-row"><span>📞 Điện thoại</span><span style="color:var(--text-muted);font-size:12px">0912 000 111</span></div>
+              <div class="set-row"><span>🏢 Đơn vị</span><span style="color:var(--text-muted);font-size:12px">CA P.An Lạc, Q.Bình Tân</span></div>
+            </div>
+            <div class="set-card">
+              <div class="set-ttl">🔔 Thông báo</div>
+              <div class="set-row"><span>Thông báo tạm trú mới</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><span>Cảnh báo đối tượng theo dõi</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><span>Nhắc nhở cập nhật dữ liệu</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><span>Giấy phép KD sắp hết hạn</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><span>Báo cáo hàng tuần tự động</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="set-card">
+              <div class="set-ttl">🗺️ Bản đồ sơ đồ</div>
+              <div class="set-row"><span>Hiện nhân khẩu trên ô nhà</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><span>Highlight tạm trú / tạm vắng</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><span>Chế độ tối (Dark mode)</span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><span>Tự động refresh mỗi 5 phút</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="set-card">
+              <div class="set-ttl">📱 Thông tin hệ thống</div>
+              <div class="set-row"><span>Phiên bản</span><span style="font-size:12px;color:var(--text-muted)">v2.4.1 (Build 2026.09.11)</span></div>
+              <div class="set-row"><span>Cập nhật lần cuối</span><span style="font-size:12px;color:var(--text-muted)">05/09/2026</span></div>
+              <div class="set-row"><span>Đơn vị phát triển</span><span style="font-size:12px;color:var(--text-muted)">CATP.HCM — PB CNTT</span></div>
+              <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+                <button class="btn-primary" style="justify-content:center" onclick="toast('Đã xuất báo cáo tháng 9/2026 thành công!','ok')">📥 Xuất báo cáo tháng 9/2026</button>
+                <button class="btn-out" style="justify-content:center" onclick="toast('Đang sao lưu dữ liệu...','warn')">💾 Sao lưu dữ liệu</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ─ BẢN ĐỒ NÂNG CAO ─ -->
+        <div class="page" id="page-advmap">
+          <div class="ph">
+            <h2>🛰️ Bản đồ nâng cao</h2>
+            <p>Sơ đồ địa bàn dạng bản đồ tương tác — Kéo chuột để di chuyển · Cuộn để phóng to/thu nhỏ · Click vào khối nhà để xem chi tiết</p>
+          </div>
+          <div class="map-toolbar">
+            <div class="srch-box">
+              <span class="srch-icon">🔍</span>
+              <input type="text" id="advSearch" placeholder="Tìm số nhà, tên chủ hộ, tên đường…" oninput="advSearchFn(this.value)">
+            </div>
+            <div class="mtype-wrap">
+              <button class="mtype-btn on" id="btn-schematic" onclick="setMapType('schematic')">📐 Sơ đồ</button>
+              <button class="mtype-btn" id="btn-satellite" onclick="setMapType('satellite')">🛰️ Vệ tinh</button>
+            </div>
+            <div class="zoom-grp">
+              <button class="zoom-btn" onclick="doAdvZoom(0.25)" title="Phóng to">+</button>
+              <button class="zoom-btn" onclick="doAdvZoom(-0.25)" title="Thu nhỏ">−</button>
+              <button class="zoom-btn" onclick="resetAdvView()" title="Về vị trí ban đầu" style="font-size:13px">⊡</button>
+            </div>
+          </div>
+          <div class="adv-wrap">
+            <div class="adv-ctrl-group">
+              <div class="adv-ctrl-btn" onclick="doAdvZoom(0.25)" title="Phóng to">+</div>
+              <div class="adv-ctrl-btn" onclick="doAdvZoom(-0.25)" title="Thu nhỏ">−</div>
+              <div class="adv-ctrl-btn" onclick="resetAdvView()" title="Reset" style="font-size:13px">⊡</div>
+            </div>
+            <div class="adv-compass">🧭</div>
+            <div class="adv-svg-container" id="advMapContainer">
+              <div id="advMapTransform">
+                <svg id="advSvg" xmlns="http://www.w3.org/2000/svg" width="920" height="640"></svg>
+              </div>
+            </div>
+          </div>
+          <div class="map-legend" style="margin-top:14px;">
+            <div class="leg-item"><div class="leg-clr g"></div> Hộ dân bình thường</div>
+            <div class="leg-item"><div class="leg-clr b"></div> Cơ sở kinh doanh</div>
+            <div class="leg-item"><div class="leg-clr r"></div> Cần chú ý / Theo dõi</div>
+            <div class="leg-item"><div class="leg-clr x"></div> Chưa có thông tin</div>
+            <div class="leg-item" style="color:#999;font-size:11px">🖱️ Cuộn để zoom · 🤚 Kéo để di chuyển · 👆 Click để xem chi tiết</div>
+          </div>
+        </div>
+
+        <!-- ─ BẢN ĐỒ THỰC ĐỊA ─ -->
+        <div class="page" id="page-fieldmap">
+          <div class="ph">
+            <h2>🗺️ Bản đồ Thực địa</h2>
+            <p>Bản đồ tương tác tích hợp dữ liệu hộ dân — Q.1, TP.HCM · Click khối nhà để xem thông tin · Nhấp đôi vùng trống để thêm điểm mới</p>
+          </div>
+          <div class="fm-layout">
+            <!-- Panel trái -->
+            <div class="fm-panel" id="fmPanel">
+              <div class="fm-panel-inner">
+                <div class="fm-filter-box">
+                  <div class="fm-filter-title">Bộ lọc theo loại</div>
+                  <div class="fm-radio-group">
+                    <label><input type="radio" name="fmFlt" value="all" checked onchange="fmPanelFilter('all')"> Tất cả</label>
+                    <label><input type="radio" name="fmFlt" value="ho_dan" onchange="fmPanelFilter('ho_dan')"> 🏠 Hộ dân</label>
+                    <label><input type="radio" name="fmFlt" value="co_so_kd" onchange="fmPanelFilter('co_so_kd')"> 🏢 Cơ sở KD</label>
+                    <label><input type="radio" name="fmFlt" value="chu_y" onchange="fmPanelFilter('chu_y')"> ⚠️ Cần chú ý</label>
+                  </div>
+                  <input type="text" class="fm-panel-search" id="fmPanelSearch" placeholder="Tìm số nhà, tên chủ hộ..." oninput="fmPanelSearch(this.value)">
+                </div>
+                <div class="fm-list-hdr">Kết quả: <span id="fmCount">0</span> địa điểm</div>
+                <div class="fm-list" id="fmList"></div>
+              </div>
+            </div>
+            <!-- Khu vực bản đồ -->
+            <div class="fm-map-area">
+              <!-- Loading overlay -->
+              <div class="fm-loading" id="fmLoading">
+                <div class="fm-loading-inner">
+                  <div class="fm-spinner"></div>
+                  <div class="fm-loading-txt">🗺️ Đang tải bản đồ thực địa...</div>
+                  <div class="fm-progress-bar"><div class="fm-progress-fill" id="fmProgress"></div></div>
+                </div>
+              </div>
+              <!-- Toolbar nổi -->
+              <div class="fm-toolbar" id="fmToolbar">
+                <input type="text" class="fm-tb-search" id="fmMapSrch" placeholder="🔍 Số nhà, tên chủ hộ..." oninput="fmMapSearch(this.value)">
+                <select class="fm-tb-select" id="fmMapFlt" onchange="fmMapFilter(this.value)">
+                  <option value="all">Lọc: Tất cả</option>
+                  <option value="ho_dan">Hộ dân</option>
+                  <option value="co_so_kd">Cơ sở KD</option>
+                  <option value="chu_y">Cần chú ý</option>
+                  <option value="chua_co_tt">Chưa có TT</option>
+                </select>
+                <button class="fm-tb-btn" onclick="fmResetView()">📍 Reset</button>
+                <button class="fm-tb-btn" id="fmBtnHD" onclick="fmToggleType('ho_dan')">🏠 Hộ dân</button>
+                <button class="fm-tb-btn" id="fmBtnKD" onclick="fmToggleType('co_so_kd')">🏢 Cơ sở KD</button>
+                <button class="fm-tb-btn" id="fmBtnCY" onclick="fmToggleType('chu_y')">⚠️ Chú ý</button>
+                <button class="fm-tb-btn" onclick="fmShowStats()">📊 Thống kê</button>
+                <button class="fm-tb-btn" onclick="fmTogglePanel()">◀ Panel</button>
+                <button class="fm-tb-btn" onclick="fmFullscreen()">⛶ Full</button>
+                <button class="fm-tb-btn" onclick="fmScreenshot()">📸 Chụp</button>
+              </div>
+              <!-- Stats tooltip -->
+              <div class="fm-stats-box" id="fmStatsBox">
+                <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px;">📊 Thống kê khu vực</div>
+                <div id="fmStatsContent"></div>
+              </div>
+              <!-- Map container -->
+              <div id="fmMap"></div>
+              <!-- Legend nổi -->
+              <div class="fm-legend" id="fmLegend">
+                <div class="fm-legend-title">📊 Thống kê khu vực</div>
+                <div class="fm-legend-item" id="fmLegItemHD" onclick="fmToggleType('ho_dan')">
+                  <span class="fm-leg-dot" style="background:#4CAF50"></span>
+                  <span>Hộ dân</span><strong id="fmLegHD">0</strong>
+                </div>
+                <div class="fm-legend-item" id="fmLegItemKD" onclick="fmToggleType('co_so_kd')">
+                  <span class="fm-leg-dot" style="background:#2196F3"></span>
+                  <span>Cơ sở KD</span><strong id="fmLegKD">0</strong>
+                </div>
+                <div class="fm-legend-item" id="fmLegItemCY" onclick="fmToggleType('chu_y')">
+                  <span class="fm-leg-dot" style="background:#f44336"></span>
+                  <span>Cần chú ý</span><strong id="fmLegCY">0</strong>
+                </div>
+                <div class="fm-legend-item" id="fmLegItemUT" onclick="fmToggleType('chua_co_tt')">
+                  <span class="fm-leg-dot" style="background:#9E9E9E"></span>
+                  <span>Chưa có TT</span><strong id="fmLegUT">0</strong>
+                </div>
+                <div class="fm-legend-sep"></div>
+                <div class="fm-legend-total">Tổng: <strong id="fmLegTotal">0</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-wrap -->
+    </main>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODAL THÊM ĐỊA ĐIỂM (Bản đồ thực địa)
+════════════════════════════════════════ -->
+<div class="fm-add-modal" id="fmAddModal">
+  <div class="fm-add-box">
+    <div class="fm-add-title">📍 Thêm địa điểm mới</div>
+    <div class="fm-add-field">
+      <label>Số nhà</label>
+      <input type="text" id="fmAddSoNha" placeholder="VD: 42">
+    </div>
+    <div class="fm-add-field">
+      <label>Tên chủ hộ / Tên cơ sở</label>
+      <input type="text" id="fmAddChuHo" placeholder="VD: Nguyễn Văn A">
+    </div>
+    <div class="fm-add-field">
+      <label>Loại hộ</label>
+      <select id="fmAddLoai">
+        <option value="ho_dan">🏠 Hộ dân bình thường</option>
+        <option value="co_so_kd">🏢 Cơ sở kinh doanh</option>
+        <option value="chu_y">⚠️ Cần chú ý / Theo dõi</option>
+        <option value="chua_co_tt">❓ Chưa có thông tin</option>
+      </select>
+    </div>
+    <div class="fm-add-field">
+      <label>Ghi chú</label>
+      <textarea id="fmAddGhiChu" rows="2" placeholder="Ghi chú thêm..." style="resize:vertical"></textarea>
+    </div>
+    <div class="fm-add-btns">
+      <button class="btn-primary" style="flex:1" onclick="fmSaveNewLocation()">💾 Lưu địa điểm</button>
+      <button class="btn-out" onclick="fmCloseAddModal()">✕ Hủy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODAL CHI TIẾT NHÀ
+════════════════════════════════════════ -->
+<div class="overlay" id="houseOvl" onclick="closeHouseModal(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="mh-ico" id="mIco"></div>
+      <div class="mh-info">
+        <div class="mh-addr" id="mAddr"></div>
+        <div class="mh-type" id="mType"></div>
+      </div>
+      <button class="m-close" onclick="closeHouseModal()">✕</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+    <div class="modal-ftr">
+      <button class="btn-out" onclick="toast('Tính năng xem lịch sử đang phát triển','warn')">📜 Xem lịch sử</button>
+      <button class="btn-out" onclick="closeHouseModal()">✕ Đóng</button>
+      <button class="btn-gold" onclick="openEditFromModal()">✏️ Chỉnh sửa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODAL THÊM / SỬA
+════════════════════════════════════════ -->
+<div class="overlay" id="editOvl" onclick="closeEditModal(event)">
+  <div class="modal sm">
+    <div class="modal-hdr">
+      <div class="mh-ico" style="background:rgba(240,192,64,0.15)">📝</div>
+      <div class="mh-info">
+        <div class="mh-addr" id="editTitle">Thêm hộ dân mới</div>
+        <div class="mh-type">Điền đầy đủ thông tin bên dưới rồi nhấn Lưu</div>
+      </div>
+      <button class="m-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="m-sec">
+        <div class="m-stl">🏠 Địa chỉ</div>
+        <div class="fm-row">
+          <div class="fm-grp"><label>Số nhà *</label><input type="text" id="eNo" placeholder="VD: 12"></div>
+          <div class="fm-grp"><label>Tuyến đường *</label>
+            <select id="eRoad"><option>Nguyễn Văn Cừ</option><option>Lê Lợi</option></select>
+          </div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-grp"><label>Loại hộ *</label>
+            <select id="eType">
+              <option value="ho_dan">🏠 Hộ dân</option>
+              <option value="co_so_kd">🏢 Cơ sở KD</option>
+              <option value="chu_y">⚠️ Cần chú ý</option>
+              <option value="chua_co_tt">❓ Chưa có TT</option>
+            </select>
+          </div>
+          <div class="fm-grp"><label>Bên đường</label>
+            <select id="eSide"><option value="le">Số lẻ (trái)</option><option value="chan">Số chẵn (phải)</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="m-sec">
+        <div class="m-stl">👤 Chủ hộ</div>
+        <div class="fm-row">
+          <div class="fm-grp"><label>Họ và tên *</label><input type="text" id="eName" placeholder="VD: Nguyễn Văn A"></div>
+          <div class="fm-grp"><label>CCCD (12 số)</label><input type="text" id="eCccd" placeholder="079XXXXXXXXX" maxlength="12"></div>
+        </div>
+        <div class="fm-row">
+          <div class="fm-grp"><label>Số điện thoại</label><input type="text" id="eSdt" placeholder="09XX XXX XXX"></div>
+          <div class="fm-grp"><label>Số nhân khẩu</label><input type="number" id="ePop" min="0" placeholder="0"></div>
+        </div>
+      </div>
+      <div class="m-sec">
+        <div class="m-stl">📝 Ghi chú</div>
+        <div class="fm-grp fm-full"><textarea id="eNote" rows="3" placeholder="Ghi chú đặc biệt (nếu có)…" style="width:100%;resize:vertical"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn-out" onclick="closeEditModal()">✕ Hủy</button>
+      <button class="btn-gold" onclick="saveEdit()">💾 Lưu thông tin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toastEl"><span id="toastIco"></span><span id="toastMsg"></span></div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+/* =====================================================
+   DỮ LIỆU GIẢ — Danh sách hộ dân & cơ sở kinh doanh
+   Phường An Lạc, Quận Bình Tân, TP.HCM
+===================================================== */
+var houses = [
+  /* ──────── ĐƯỜNG NGUYỄN VĂN CỪ ──────── */
+  {
+    id:1, soNha:"1", duong:"Nguyễn Văn Cừ", loai:"ho_dan", ben:"le",
+    chuHo:"Trần Văn Minh", cccd:"079088012345", sdt:"0912 345 678",
+    soNK:4, tamTru:0, tamVang:1, coSoKD:null,
+    tv:[
+      {ten:"Trần Văn Minh",     qh:"Chủ hộ",  ns:"1975"},
+      {ten:"Nguyễn Thị Hoa",   qh:"Vợ",      ns:"1978"},
+      {ten:"Trần Minh Khôi",   qh:"Con trai", ns:"2002"},
+      {ten:"Trần Thị Linh",    qh:"Con gái",  ns:"2005"}
+    ],
+    ghiChu:"Gia đình ổn định, chấp hành tốt quy định địa phương.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"10/09/2026 08:30"
+  },
+  {
+    id:2, soNha:"2", duong:"Nguyễn Văn Cừ", loai:"co_so_kd", ben:"chan",
+    chuHo:"Nguyễn Thanh Tùng", cccd:"079075098765", sdt:"0938 765 432",
+    soNK:0, tamTru:0, tamVang:0,
+    coSoKD:{
+      ten:"Công ty TNHH TM Phát Đạt", nganhNghe:"Thương mại — Dịch vụ",
+      gp:"0315678901", hetHan:"31/12/2027", nv:8,
+      dc:"2 Nguyễn Văn Cừ, P.An Lạc, Q.Bình Tân"
+    },
+    tv:[], ghiChu:"Kinh doanh ổn định, đóng thuế đầy đủ, không vi phạm.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"08/09/2026 14:15"
+  },
+  {
+    id:3, soNha:"3", duong:"Nguyễn Văn Cừ", loai:"ho_dan", ben:"le",
+    chuHo:"Nguyễn Thị Lan", cccd:"079082034567", sdt:"0971 234 567",
+    soNK:3, tamTru:1, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Nguyễn Thị Lan",   qh:"Chủ hộ",  ns:"1968"},
+      {ten:"Phạm Văn Đức",     qh:"Con trai", ns:"1992"},
+      {ten:"Nguyễn Thị Thu",   qh:"Con gái",  ns:"1998"}
+    ],
+    ghiChu:"Có 1 người tạm trú: sinh viên ĐH Kinh tế TP.HCM đang thuê trọ.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"05/09/2026 09:00"
+  },
+  {
+    id:4, soNha:"4", duong:"Nguyễn Văn Cừ", loai:"co_so_kd", ben:"chan",
+    chuHo:"Lê Thị Hồng", cccd:"079080056789", sdt:"0905 678 901",
+    soNK:2, tamTru:0, tamVang:0,
+    coSoKD:{
+      ten:"Cửa hàng Tạp Hóa Hồng Phúc", nganhNghe:"Bán lẻ thực phẩm & hàng tiêu dùng",
+      gp:"BL-2021-04567", hetHan:"15/06/2027", nv:2,
+      dc:"4 Nguyễn Văn Cừ, P.An Lạc, Q.Bình Tân"
+    },
+    tv:[
+      {ten:"Lê Thị Hồng",   qh:"Chủ hộ",  ns:"1972"},
+      {ten:"Lê Thành Phú",  qh:"Con trai", ns:"1999"}
+    ],
+    ghiChu:"Cửa hàng nhỏ, hoạt động bình thường. Chủ hộ ở tầng 2.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"07/09/2026 10:30"
+  },
+  {
+    id:5, soNha:"5", duong:"Nguyễn Văn Cừ", loai:"ho_dan", ben:"le",
+    chuHo:"Lê Văn Hùng", cccd:"079090078901", sdt:"0987 654 321",
+    soNK:5, tamTru:0, tamVang:2, coSoKD:null,
+    tv:[
+      {ten:"Lê Văn Hùng",      qh:"Chủ hộ",  ns:"1970"},
+      {ten:"Võ Thị Mỹ",        qh:"Vợ",      ns:"1973"},
+      {ten:"Lê Minh Toàn",     qh:"Con trai", ns:"1995"},
+      {ten:"Lê Thị Phương",    qh:"Con gái",  ns:"1998"},
+      {ten:"Lê Văn Khải",      qh:"Con trai", ns:"2003"}
+    ],
+    ghiChu:"2 người con học ĐH tại Hà Nội, đăng ký tạm vắng định kỳ.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"09/09/2026 15:45"
+  },
+  {
+    id:6, soNha:"6", duong:"Nguyễn Văn Cừ", loai:"ho_dan", ben:"chan",
+    chuHo:"Phạm Thị Nga", cccd:"079085089012", sdt:"0961 234 567",
+    soNK:2, tamTru:0, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Phạm Thị Nga",    qh:"Chủ hộ",  ns:"1980"},
+      {ten:"Nguyễn Bảo An",   qh:"Con trai", ns:"2010"}
+    ],
+    ghiChu:"Hộ đơn thân, hoàn cảnh khó khăn. Cần quan tâm, hỗ trợ khi cần.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"06/09/2026 11:00"
+  },
+  {
+    id:7, soNha:"7", duong:"Nguyễn Văn Cừ", loai:"chu_y", ben:"le",
+    chuHo:"Võ Văn Thắng", cccd:"079083001234", sdt:"0931 111 222",
+    soNK:3, tamTru:2, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Võ Văn Thắng",   qh:"Chủ hộ",  ns:"1985"},
+      {ten:"Trần Thị Kim",   qh:"Vợ",      ns:"1988"},
+      {ten:"Võ Thành Long",  qh:"Con trai", ns:"2012"}
+    ],
+    ghiChu:"⚠️ ĐỐI TƯỢNG THEO DÕI: Có tiền án về tàng trữ ma túy (2019), hiện đang tại ngoại. Cần kiểm tra định kỳ ít nhất 1 lần/tuần. Hiện có 2 người tạm trú chưa xác minh đầy đủ danh tính.",
+    nguoiCN:"Thiếu tá Nguyễn Minh Quân", tgCN:"11/09/2026 07:00"
+  },
+  {
+    id:8, soNha:"8", duong:"Nguyễn Văn Cừ", loai:"ho_dan", ben:"chan",
+    chuHo:"Đặng Thị Bích", cccd:"079078045678", sdt:"0946 789 012",
+    soNK:4, tamTru:0, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Đặng Thị Bích",     qh:"Chủ hộ", ns:"1965"},
+      {ten:"Hoàng Văn Tài",     qh:"Chồng",  ns:"1962"},
+      {ten:"Hoàng Minh Quang",  qh:"Con trai", ns:"1990"},
+      {ten:"Hoàng Thị Yến",     qh:"Con gái",  ns:"1994"}
+    ],
+    ghiChu:"Gia đình văn hóa tiêu biểu cấp phường năm 2025.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"04/09/2026 16:30"
+  },
+  {
+    id:9, soNha:"9", duong:"Nguyễn Văn Cừ", loai:"chua_co_tt", ben:"le",
+    chuHo:"Chưa xác định", cccd:"", sdt:"",
+    soNK:0, tamTru:0, tamVang:0, coSoKD:null, tv:[],
+    ghiChu:"Nhà bỏ trống hoặc chủ nhà chưa hợp tác khai báo. Cần tiếp tục xác minh trong tháng 10/2026.",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"01/09/2026 09:00"
+  },
+  {
+    id:10, soNha:"10", duong:"Nguyễn Văn Cừ", loai:"ho_dan", ben:"chan",
+    chuHo:"Hoàng Văn Nam", cccd:"079092056789", sdt:"0918 234 567",
+    soNK:3, tamTru:0, tamVang:1, coSoKD:null,
+    tv:[
+      {ten:"Hoàng Văn Nam",   qh:"Chủ hộ", ns:"1978"},
+      {ten:"Lê Thị Xuân",     qh:"Vợ",     ns:"1981"},
+      {ten:"Hoàng Bảo Châu",  qh:"Con gái", ns:"2008"}
+    ],
+    ghiChu:"",
+    nguoiCN:"CSKV Nguyễn Văn Bình", tgCN:"08/09/2026 13:00"
+  },
+  /* ──────── ĐƯỜNG LÊ LỢI ──────── */
+  {
+    id:11, soNha:"5", duong:"Lê Lợi", loai:"ho_dan", ben:"le",
+    chuHo:"Bùi Thị Thu", cccd:"079079067890", sdt:"0977 345 678",
+    soNK:4, tamTru:0, tamVang:2, coSoKD:null,
+    tv:[
+      {ten:"Bùi Thị Thu",      qh:"Chủ hộ",  ns:"1971"},
+      {ten:"Trần Quang Vinh",  qh:"Chồng",   ns:"1969"},
+      {ten:"Trần Quang Huy",   qh:"Con trai", ns:"1996"},
+      {ten:"Trần Thị Ngân",    qh:"Con gái",  ns:"2000"}
+    ],
+    ghiChu:"2 người con đang học đại học tại Hà Nội, đăng ký tạm vắng.",
+    nguoiCN:"CSKV Nguyễn Thị Cúc", tgCN:"09/09/2026 10:00"
+  },
+  {
+    id:12, soNha:"7", duong:"Lê Lợi", loai:"co_so_kd", ben:"le",
+    chuHo:"Nguyễn Văn Phúc", cccd:"079081078901", sdt:"0903 456 789",
+    soNK:2, tamTru:0, tamVang:0,
+    coSoKD:{
+      ten:"Quán Ăn Hương Việt", nganhNghe:"Kinh doanh ăn uống (cơm, bún, phở)",
+      gp:"AU-2022-00891", hetHan:"20/03/2028", nv:5,
+      dc:"7 Lê Lợi, P.An Lạc, Q.Bình Tân"
+    },
+    tv:[
+      {ten:"Nguyễn Văn Phúc", qh:"Chủ hộ", ns:"1976"},
+      {ten:"Đỗ Thị Hằng",     qh:"Vợ",     ns:"1979"}
+    ],
+    ghiChu:"Quán phục vụ 06:00–22:00. Đã kiểm tra VSATTP tháng 8/2026, đạt tiêu chuẩn.",
+    nguoiCN:"CSKV Nguyễn Thị Cúc", tgCN:"07/09/2026 16:00"
+  },
+  {
+    id:13, soNha:"9", duong:"Lê Lợi", loai:"ho_dan", ben:"le",
+    chuHo:"Ngô Văn Khoa", cccd:"079086089012", sdt:"0955 567 890",
+    soNK:3, tamTru:0, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Ngô Văn Khoa",  qh:"Chủ hộ",  ns:"1982"},
+      {ten:"Phạm Thị Vân",  qh:"Vợ",      ns:"1985"},
+      {ten:"Ngô Minh Khải", qh:"Con trai", ns:"2015"}
+    ],
+    ghiChu:"",
+    nguoiCN:"CSKV Nguyễn Thị Cúc", tgCN:"03/09/2026 08:30"
+  },
+  {
+    id:14, soNha:"11", duong:"Lê Lợi", loai:"ho_dan", ben:"le",
+    chuHo:"Dương Thị Hoa", cccd:"079084090123", sdt:"0922 678 901",
+    soNK:5, tamTru:0, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Dương Thị Hoa",    qh:"Chủ hộ",   ns:"1960"},
+      {ten:"Dương Văn Thành",  qh:"Chồng",    ns:"1958"},
+      {ten:"Dương Minh Khang", qh:"Con trai",  ns:"1988"},
+      {ten:"Trần Thị Bảo",     qh:"Con dâu",   ns:"1990"},
+      {ten:"Dương Bảo Trân",   qh:"Cháu nội",  ns:"2018"}
+    ],
+    ghiChu:"Gia đình 3 thế hệ, ổn định, gương mẫu trong tổ dân phố.",
+    nguoiCN:"CSKV Nguyễn Thị Cúc", tgCN:"06/09/2026 14:00"
+  },
+  {
+    id:15, soNha:"13", duong:"Lê Lợi", loai:"ho_dan", ben:"le",
+    chuHo:"Phan Văn Tuấn", cccd:"079091001234", sdt:"0943 789 012",
+    soNK:2, tamTru:1, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Phan Văn Tuấn",       qh:"Chủ hộ", ns:"1990"},
+      {ten:"Lê Thị Thanh Tuyền",  qh:"Vợ",     ns:"1993"}
+    ],
+    ghiChu:"Có 1 người tạm trú là anh vợ đang tìm việc làm tại TP.HCM.",
+    nguoiCN:"CSKV Nguyễn Thị Cúc", tgCN:"10/09/2026 09:30"
+  },
+  {
+    id:16, soNha:"15", duong:"Lê Lợi", loai:"ho_dan", ben:"le",
+    chuHo:"Lý Thị Mai", cccd:"079087012345", sdt:"0968 890 123",
+    soNK:3, tamTru:0, tamVang:0, coSoKD:null,
+    tv:[
+      {ten:"Lý Thị Mai",       qh:"Chủ hộ",  ns:"1975"},
+      {ten:"Cao Văn Minh",     qh:"Chồng",   ns:"1972"},
+      {ten:"Cao Thị Diễm My",  qh:"Con gái", ns:"2005"}
+    ],
+    ghiChu:"",
+    nguoiCN:"CSKV Nguyễn Thị Cúc", tgCN:"05/09/2026 11:30"
+  }
+];
+
+/* =====================================================
+   BẢN ĐỒ NÂNG CAO — Isometric 3D Map (Google Maps style)
+===================================================== */
+var advMapType = 'schematic';
+var advZoomLvl = 1;
+var advPanX = 0, advPanY = 0;
+var advDragging = false;
+var advDragSX = 0, advDragSY = 0;
+var advPanSX = 0, advPanSY = 0;
+var advMapInited = false;
+
+/* Bảng màu sơ đồ (Schematic) */
+var CSCH = {
+  bg:'#e8e4dc', road:'#c4c0b8', rBorder:'#9c9890',
+  sidewalk:'#d4d0c8', parcel:'#dedad2',
+  park:'#b0d8b0', parkS:'#6db86d',
+  tree:'#50a050', treeS:'#347034',
+  roadTxt:'#46423e', streetBg:'rgba(255,255,255,0.82)'
+};
+/* Bảng màu vệ tinh (Satellite) */
+var CSAT = {
+  bg:'#1a221a', road:'#161616', rBorder:'#0a0a0a',
+  sidewalk:'#22221e', parcel:'#20241e',
+  park:'#142414', parkS:'#1e3a1e',
+  tree:'#163016', treeS:'#102010',
+  roadTxt:'#ccc8c4', streetBg:'rgba(0,0,0,0.60)'
+};
+
+function getAdvC() { return advMapType === 'satellite' ? CSAT : CSCH; }
+
+/* Màu 3 mặt nhà theo loại */
+function getBld3DColors(loai, isCtx) {
+  var sat = advMapType === 'satellite';
+  if (isCtx) {
+    return sat
+      ? {t:'#3c403c', f:'#2c302c', r:'#202420', s:'#181c18'}
+      : {t:'#ceccc6', f:'#b4b2ac', r:'#9a9892', s:'#7e7c76'};
+  }
+  var sch = {
+    ho_dan:     {t:'#3ccc70', f:'#27ae60', r:'#1a7840', s:'#126030'},
+    co_so_kd:   {t:'#56b4f0', f:'#2980b9', r:'#1a5a8a', s:'#104268'},
+    chu_y:      {t:'#f25648', f:'#c0392b', r:'#8c1e16', s:'#6c1610'},
+    chua_co_tt: {t:'#bcc0c4', f:'#95a5a6', r:'#687274', s:'#4c5658'}
+  };
+  var satC = {
+    ho_dan:     {t:'#346e50', f:'#235238', r:'#143820', s:'#0e2416'},
+    co_so_kd:   {t:'#345c92', f:'#224278', r:'#12304e', s:'#0c2038'},
+    chu_y:      {t:'#8c2e2e', f:'#681a1a', r:'#480e0e', s:'#340c0c'},
+    chua_co_tt: {t:'#585858', f:'#3c3c3c', r:'#282828', s:'#1c1c1c'}
+  };
+  var tbl = sat ? satC : sch;
+  return tbl[loai] || tbl.ho_dan;
+}
+
+/* ─── Isometric projection engine ─── */
+var ISO_HS = 24, ISO_VS = 12, ISO_ZS = 20;
+var ISO_OX = 480, ISO_OY = 60;
+
+function isoP(wx, wy, wz) {
+  return {
+    x: ISO_OX + (wx - wy) * ISO_HS,
+    y: ISO_OY + (wx + wy) * ISO_VS - (wz || 0) * ISO_ZS
+  };
+}
+
+function ptsStr(arr) {
+  return arr.map(function(p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+}
+
+/* Vẽ hình bình hành mặt đất từ (x0,y0) đến (x1,y1) tại wz=0 */
+function gRect(x0, y0, x1, y1, fill, stroke, sw) {
+  var a = isoP(x0,y0,0), b = isoP(x1,y0,0), c = isoP(x1,y1,0), d = isoP(x0,y1,0);
+  return '<polygon points="' + ptsStr([a,b,c,d]) + '" fill="' + fill
+       + '" stroke="' + (stroke || 'none') + '" stroke-width="' + (sw || 0) + '"/>';
+}
+
+/* Dữ liệu khối nhà 3D isometric
+   wx,wy = góc tây-bắc; ww=chiều rộng(wx); wd=chiều sâu(wy); wh=chiều cao */
+var ISO_BLDS = [
+  /* NVC North — số lẻ (wy=0 → 3.8) */
+  {hid:1,  wx:1.5,  wy:0,    ww:2.2, wd:3.8, wh:3.0},
+  {hid:3,  wx:4.5,  wy:0,    ww:2.2, wd:3.8, wh:3.5},
+  {hid:5,  wx:7.5,  wy:0,    ww:2.2, wd:3.8, wh:3.2},
+  {hid:7,  wx:10.5, wy:0,    ww:2.2, wd:3.8, wh:5.2},
+  {hid:9,  wx:13.5, wy:0,    ww:2.2, wd:3.8, wh:1.8},
+  {ctx:1,  wx:16.5, wy:0,    ww:2.2, wd:3.8, wh:2.5},
+  {ctx:1,  wx:19.5, wy:0,    ww:2.2, wd:3.8, wh:3.0},
+  /* NVC South — số chẵn (wy=6.3 → 9.5) */
+  {hid:2,  wx:1.5,  wy:6.3,  ww:2.8, wd:3.2, wh:4.2},
+  {hid:4,  wx:5.2,  wy:6.3,  ww:2.2, wd:3.2, wh:3.8},
+  {hid:6,  wx:8.4,  wy:6.3,  ww:2.2, wd:3.2, wh:2.5},
+  {hid:8,  wx:11.6, wy:6.3,  ww:2.2, wd:3.2, wh:2.8},
+  {hid:10, wx:14.8, wy:6.3,  ww:2.2, wd:3.2, wh:2.5},
+  {ctx:1,  wx:18.0, wy:6.3,  ww:2.2, wd:3.2, wh:3.0},
+  {ctx:1,  wx:21.0, wy:6.3,  ww:2.0, wd:3.2, wh:2.5},
+  /* Lê Lợi (wy=11.8 → 14.6) */
+  {hid:11, wx:1.5,  wy:11.8, ww:2.0, wd:2.8, wh:2.5},
+  {hid:12, wx:4.5,  wy:11.8, ww:2.8, wd:2.8, wh:3.8},
+  {hid:13, wx:8.0,  wy:11.8, ww:2.0, wd:2.8, wh:2.5},
+  {hid:14, wx:11.0, wy:11.8, ww:2.0, wd:2.8, wh:2.8},
+  {hid:15, wx:14.0, wy:11.8, ww:2.0, wd:2.8, wh:2.5},
+  {hid:16, wx:17.0, wy:11.8, ww:2.0, wd:2.8, wh:2.8},
+  {ctx:1,  wx:20.0, wy:11.8, ww:2.0, wd:2.8, wh:2.5}
+];
+
+function renderAdvMap() {
+  var svgEl = document.getElementById('advSvg');
+  if (!svgEl) return;
+  svgEl.setAttribute('width', '1060');
+  svgEl.setAttribute('height', '560');
+
+  var C = getAdvC();
+  var sat = advMapType === 'satellite';
+  var s = '';
+
+  /* Nền */
+  s += '<rect width="1060" height="560" fill="' + C.bg + '"/>';
+
+  /* Lô đất (parcels) */
+  s += gRect(0, 0,    23, 3.8,  C.parcel, 'none', 0);
+  s += gRect(0, 6.3,  23, 9.5,  C.parcel, 'none', 0);
+  s += gRect(0, 11.8, 23, 14.6, C.parcel, 'none', 0);
+
+  /* Công viên */
+  s += gRect(0, 14.8, 23, 18.5, C.park, 'none', 0);
+
+  /* Vỉa hè */
+  s += gRect(0, 3.8,  23, 4.2,  C.sidewalk, 'none', 0);
+  s += gRect(0, 5.9,  23, 6.3,  C.sidewalk, 'none', 0);
+  s += gRect(0, 9.5,  23, 9.9,  C.sidewalk, 'none', 0);
+  s += gRect(0, 11.4, 23, 11.8, C.sidewalk, 'none', 0);
+
+  /* Đường Nguyễn Văn Cừ (wy=4.2–5.9) */
+  s += gRect(0, 4.2, 23, 5.9, C.road, C.rBorder, 0.5);
+  /* Đường Lê Lợi (wy=9.9–11.4) */
+  s += gRect(0, 9.9, 23, 11.4, C.road, C.rBorder, 0.5);
+
+  /* Vạch kẻ đường giữa */
+  s += gRect(0.5, 5.02, 22.5, 5.08, sat ? 'rgba(255,255,100,0.55)' : 'rgba(240,215,0,0.80)', 'none', 0);
+  s += gRect(0.5, 10.62, 22.5, 10.68, sat ? 'rgba(255,255,100,0.55)' : 'rgba(240,215,0,0.80)', 'none', 0);
+
+  /* Tên đường */
+  var nvcPt = isoP(11, 5.05, 0);
+  s += '<text x="' + nvcPt.x.toFixed(0) + '" y="' + (nvcPt.y - 1).toFixed(0) + '"'
+     + ' text-anchor="middle" font-size="10" font-weight="800" letter-spacing="1.5"'
+     + ' fill="' + C.roadTxt + '" font-family="Be Vietnam Pro,sans-serif"'
+     + ' stroke="' + (sat ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.75)') + '"'
+     + ' stroke-width="2.5" paint-order="stroke">NGUYỄN VĂN CỪ</text>';
+  var llPt = isoP(8, 10.65, 0);
+  s += '<text x="' + llPt.x.toFixed(0) + '" y="' + (llPt.y - 1).toFixed(0) + '"'
+     + ' text-anchor="middle" font-size="10" font-weight="700" letter-spacing="1"'
+     + ' fill="' + C.roadTxt + '" font-family="Be Vietnam Pro,sans-serif"'
+     + ' stroke="' + (sat ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.75)') + '"'
+     + ' stroke-width="2.5" paint-order="stroke">LÊ LỢI</text>';
+
+  /* Cây trong công viên */
+  var treePts = [[2,15.4],[5,16],[8,15.4],[11,16.1],[14,15.4],[17,16],[20,15.4]];
+  treePts.forEach(function(t) {
+    var base = isoP(t[0], t[1], 0);
+    var top  = isoP(t[0], t[1], 2.4);
+    s += '<line x1="' + base.x.toFixed(1) + '" y1="' + base.y.toFixed(1) + '"'
+       + ' x2="' + top.x.toFixed(1) + '" y2="' + top.y.toFixed(1) + '"'
+       + ' stroke="' + C.treeS + '" stroke-width="2.5"/>';
+    s += '<ellipse cx="' + top.x.toFixed(1) + '" cy="' + top.y.toFixed(1) + '"'
+       + ' rx="15" ry="9" fill="' + C.tree + '"/>';
+    s += '<ellipse cx="' + (top.x - 7).toFixed(1) + '" cy="' + (top.y + 5).toFixed(1) + '"'
+       + ' rx="10" ry="7" fill="' + C.treeS + '" opacity="0.9"/>';
+  });
+  var pkPt = isoP(9, 17.0, 0);
+  s += '<text x="' + pkPt.x.toFixed(0) + '" y="' + pkPt.y.toFixed(0) + '"'
+     + ' text-anchor="middle" font-size="11" font-weight="600"'
+     + ' fill="' + C.parkS + '" font-family="Be Vietnam Pro,sans-serif">'
+     + 'Công viên — Khu vực công cộng</text>';
+
+  /* Sắp xếp nhà: xa trước (painter's algorithm ascending wx+wy) */
+  var sortedBlds = ISO_BLDS.slice().sort(function(a, b) {
+    return ((a.wx + a.ww / 2) + (a.wy + a.wd / 2)) - ((b.wx + b.ww / 2) + (b.wy + b.wd / 2));
+  });
+
+  sortedBlds.forEach(function(bd) {
+    var hh = null;
+    if (!bd.ctx && bd.hid) {
+      for (var hi = 0; hi < houses.length; hi++) {
+        if (houses[hi].id === bd.hid) { hh = houses[hi]; break; }
+      }
+    }
+    var col = getBld3DColors(hh ? hh.loai : null, !!bd.ctx);
+    var wx = bd.wx, wy = bd.wy, ww = bd.ww, wd = bd.wd, wh = bd.wh;
+
+    /* 8 đỉnh khối hộp */
+    var ptA = isoP(wx,    wy,    0);
+    var ptB = isoP(wx+ww, wy,    0);
+    var ptC = isoP(wx+ww, wy+wd, 0);
+    var ptD = isoP(wx,    wy+wd, 0);
+    var ptE = isoP(wx,    wy,    wh);
+    var ptF = isoP(wx+ww, wy,    wh);
+    var ptG = isoP(wx+ww, wy+wd, wh);
+    var ptH = isoP(wx,    wy+wd, wh);
+    var sw = 0.7;
+
+    /* Bóng đổ mềm bên phải */
+    if (!bd.ctx) {
+      var shLen = wh * 0.28;
+      var sA = isoP(wx+ww,       wy,    0);
+      var sB = isoP(wx+ww+shLen, wy,    0);
+      var sC = isoP(wx+ww+shLen, wy+wd, 0);
+      var sD = isoP(wx+ww,       wy+wd, 0);
+      s += '<polygon points="' + ptsStr([sA,sB,sC,sD]) + '"'
+         + ' fill="rgba(0,0,0,' + (sat ? '0.28' : '0.09') + ')" stroke="none"/>';
+    }
+
+    /* Nhóm tương tác */
+    var gAttr = hh
+      ? 'class="adv-bld" data-id="' + hh.id + '" onclick="openHouse(' + hh.id + ')"'
+      : 'class="adv-ctx"';
+    s += '<g ' + gAttr + '>';
+
+    /* Mặt nam [D,C,G,H] — phía trái màn hình (wy+wd) */
+    s += '<polygon points="' + ptsStr([ptD,ptC,ptG,ptH]) + '"'
+       + ' fill="' + col.r + '" stroke="' + col.s + '" stroke-width="' + sw + '"/>';
+    /* Mặt bắc [A,B,F,E] — phía phải màn hình (wy) */
+    s += '<polygon points="' + ptsStr([ptA,ptB,ptF,ptE]) + '"'
+       + ' fill="' + col.f + '" stroke="' + col.s + '" stroke-width="' + sw + '"/>';
+    /* Mái [E,F,G,H] */
+    s += '<polygon points="' + ptsStr([ptE,ptF,ptG,ptH]) + '"'
+       + ' fill="' + col.t + '" stroke="' + col.s + '" stroke-width="' + sw + '"/>';
+
+    /* Nhãn nhà tương tác */
+    if (hh) {
+      var ico = ICON[hh.loai];
+      var lastName = hh.loai === 'chua_co_tt' ? '???' : hh.chuHo.split(' ').pop();
+      var roofCx = isoP(wx + ww / 2, wy + wd / 2, wh);
+      var floatPt = isoP(wx + ww / 2, wy + wd / 2, wh + 0.55);
+      var namePt  = isoP(wx + ww / 2, wy + wd / 2, wh + 1.15);
+      var icoSize = wh >= 3.5 ? '14' : '11';
+
+      /* Icon trên mái */
+      s += '<text x="' + roofCx.x.toFixed(1) + '" y="' + (roofCx.y + 3).toFixed(1) + '"'
+         + ' text-anchor="middle" dominant-baseline="middle"'
+         + ' font-size="' + icoSize + '" pointer-events="none">' + ico + '</text>';
+
+      /* Số nhà nổi trên mái */
+      s += '<text x="' + floatPt.x.toFixed(1) + '" y="' + floatPt.y.toFixed(1) + '"'
+         + ' text-anchor="middle" font-size="9.5" font-weight="800"'
+         + ' fill="white" stroke="rgba(0,0,0,0.55)" stroke-width="2.5" paint-order="stroke"'
+         + ' font-family="Be Vietnam Pro,sans-serif" pointer-events="none">Số ' + hh.soNha + '</text>';
+
+      /* Tên chủ hộ (nếu nhà đủ cao) */
+      if (wh >= 2.2) {
+        s += '<text x="' + namePt.x.toFixed(1) + '" y="' + namePt.y.toFixed(1) + '"'
+           + ' text-anchor="middle" font-size="8.5"'
+           + ' fill="rgba(255,255,255,0.92)" stroke="rgba(0,0,0,0.45)" stroke-width="2" paint-order="stroke"'
+           + ' font-family="Be Vietnam Pro,sans-serif" pointer-events="none">' + lastName + '</text>';
+      }
+    }
+    s += '</g>';
+  });
+
+  svgEl.innerHTML = s;
+
+  /* Giữ highlight tìm kiếm */
+  var advSrchEl = document.getElementById('advSearch');
+  var kwCur = advSrchEl ? advSrchEl.value.trim().toLowerCase() : '';
+  if (kwCur) advSearchFn(kwCur);
+}
+
+function setMapType(type) {
+  advMapType = type;
+  var bSch = document.getElementById('btn-schematic');
+  var bSat = document.getElementById('btn-satellite');
+  if (bSch) bSch.classList.toggle('on', type === 'schematic');
+  if (bSat) bSat.classList.toggle('on', type === 'satellite');
+  var cont = document.getElementById('advMapContainer');
+  if (cont) cont.classList.toggle('sat', type === 'satellite');
+  renderAdvMap();
+}
+
+function doAdvZoom(delta) {
+  advZoomLvl = Math.min(3.5, Math.max(0.35, advZoomLvl + delta));
+  updateAdvTransform();
+}
+
+function resetAdvView() {
+  advZoomLvl = 1;
+  advPanX = 0;
+  advPanY = 0;
+  updateAdvTransform();
+}
+
+function updateAdvTransform() {
+  var el = document.getElementById('advMapTransform');
+  if (el) el.style.transform = 'translate(' + advPanX + 'px,' + advPanY + 'px) scale(' + advZoomLvl + ')';
+}
+
+function initAdvMapInteraction() {
+  var cont = document.getElementById('advMapContainer');
+  if (!cont || cont._advInited) return;
+  cont._advInited = true;
+
+  cont.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    advDragging = true;
+    advDragSX = e.clientX;
+    advDragSY = e.clientY;
+    advPanSX = advPanX;
+    advPanSY = advPanY;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!advDragging) return;
+    advPanX = advPanSX + (e.clientX - advDragSX);
+    advPanY = advPanSY + (e.clientY - advDragSY);
+    updateAdvTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    advDragging = false;
+  });
+
+  cont.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    doAdvZoom(e.deltaY > 0 ? -0.12 : 0.12);
+  }, { passive: false });
+
+  var lastTouchDist = 0;
+  cont.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      advDragging = true;
+      advDragSX = e.touches[0].clientX;
+      advDragSY = e.touches[0].clientY;
+      advPanSX = advPanX;
+      advPanSY = advPanY;
+    } else if (e.touches.length === 2) {
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  cont.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 1 && advDragging) {
+      advPanX = advPanSX + (e.touches[0].clientX - advDragSX);
+      advPanY = advPanSY + (e.touches[0].clientY - advDragSY);
+      updateAdvTransform();
+    } else if (e.touches.length === 2) {
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (lastTouchDist > 0) doAdvZoom((dist - lastTouchDist) * 0.005);
+      lastTouchDist = dist;
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  cont.addEventListener('touchend', function() {
+    advDragging = false;
+    lastTouchDist = 0;
+  });
+}
+
+function advSearchFn(kw) {
+  kw = kw.trim().toLowerCase();
+  document.querySelectorAll('.adv-bld').forEach(function(el) { el.classList.remove('bhl'); });
+  if (!kw) return;
+  for (var i = 0; i < houses.length; i++) {
+    var h = houses[i];
+    if (h.soNha.toLowerCase().indexOf(kw) !== -1 ||
+        h.chuHo.toLowerCase().indexOf(kw) !== -1 ||
+        h.duong.toLowerCase().indexOf(kw) !== -1) {
+      var el = document.querySelector('.adv-bld[data-id="' + h.id + '"]');
+      if (el) el.classList.add('bhl');
+    }
+  }
+}
+
+/* =====================================================
+   TRẠNG THÁI ỨNG DỤNG
+===================================================== */
+var activePage  = 'map';
+var mapFilter   = 'all';
+var openHouseId = null;
+
+/* =====================================================
+   ĐĂNG NHẬP / ĐĂNG XUẤT
+===================================================== */
+function doLogin(e) {
+  e.preventDefault();
+  var u = document.getElementById('un').value.trim();
+  var p = document.getElementById('pw').value.trim();
+  if (!u || !p) { toast('Vui lòng nhập đầy đủ tài khoản và mật khẩu!', 'err'); return; }
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  /* Khởi tạo tất cả trang */
+  renderDashboard();
+  renderList();
+  goPage('map');
+  toast('Chào mừng ' + u + '! Đăng nhập thành công.', 'ok');
+}
+
+function doLogout() {
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('login-page').style.display = 'flex';
+  toast('Đã đăng xuất khỏi hệ thống.', 'warn');
+}
+
+/* =====================================================
+   ĐIỀU HƯỚNG TRANG
+===================================================== */
+function goPage(pg) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-' + pg).classList.add('active');
+  document.getElementById('nav-' + pg).classList.add('active');
+  activePage = pg;
+  if (pg === 'map')       renderMap();
+  if (pg === 'list')      renderList();
+  if (pg === 'dashboard') renderDashboard();
+  if (pg === 'advmap')   { renderAdvMap(); if (!advMapInited) { initAdvMapInteraction(); advMapInited = true; } }
+  if (pg === 'fieldmap') { initFieldMap(); }
+}
+
+/* =====================================================
+   BẢN ĐỒ SƠ ĐỒ
+===================================================== */
+var ICON = { ho_dan:'🏠', co_so_kd:'🏢', chu_y:'⚠️', chua_co_tt:'❓' };
+var CLS  = { ho_dan:'hn', co_so_kd:'hb', chu_y:'hw', chua_co_tt:'hu' };
+
+function hCard(h) {
+  var lastName = (h.loai === 'chua_co_tt') ? '???' : h.chuHo.split(' ').pop();
+  var badge = '';
+  if (h.tamTru  > 0) badge = '<div class="hbadge tt" title="' + h.tamTru + ' người tạm trú">🔔</div>';
+  else if (h.tamVang > 0) badge = '<div class="hbadge tv" title="' + h.tamVang + ' người tạm vắng">📤</div>';
+  return '<div class="hcard ' + CLS[h.loai] + '" onclick="openHouse(' + h.id + ')" data-id="' + h.id + '" data-loai="' + h.loai + '" title="' + h.soNha + ' ' + h.duong + ' — ' + h.chuHo + '">' +
+    badge +
+    '<div class="hcard-ico">' + ICON[h.loai] + '</div>' +
+    '<div class="hcard-no">Số ' + h.soNha + '</div>' +
+    '<div class="hcard-own">' + lastName + '</div>' +
+    '</div>';
+}
+
+function renderMap() {
+  /* Lấy dữ liệu theo đường và bên */
+  var nvc    = houses.filter(function(h){ return h.duong === 'Nguyễn Văn Cừ'; });
+  var nvcOdd = nvc.filter(function(h){ return h.ben === 'le'; }).sort(function(a,b){ return +a.soNha - +b.soNha; });
+  var nvcEvn = nvc.filter(function(h){ return h.ben === 'chan'; }).sort(function(a,b){ return +a.soNha - +b.soNha; });
+  var lloi   = houses.filter(function(h){ return h.duong === 'Lê Lợi'; }).sort(function(a,b){ return +a.soNha - +b.soNha; });
+
+  var html = '' +
+    '<!-- ── Đường Nguyễn Văn Cừ ── -->' +
+    '<div class="st-block">' +
+      '<div class="st-side-lbl">⬆️ Bên số lẻ &nbsp;(1, 3, 5, 7, 9…)</div>' +
+      '<div class="house-row top">' + nvcOdd.map(hCard).join('') + '</div>' +
+      '<div class="road-strip"><span class="road-name">🛣️ Đường Nguyễn Văn Cừ</span></div>' +
+      '<div class="house-row">' + nvcEvn.map(hCard).join('') + '</div>' +
+      '<div class="st-side-lbl" style="margin-top:5px">⬇️ Bên số chẵn &nbsp;(2, 4, 6, 8, 10…)</div>' +
+    '</div>' +
+    '<div style="height:28px"></div>' +
+    '<!-- ── Đường Lê Lợi ── -->' +
+    '<div class="st-block">' +
+      '<div class="st-side-lbl">⬆️ Nhà dân (số lẻ 5–15)</div>' +
+      '<div class="house-row top">' + lloi.map(hCard).join('') + '</div>' +
+      '<div class="road-strip"><span class="road-name">🛣️ Đường Lê Lợi</span></div>' +
+      '<div class="park-strip">🌳 &nbsp;Công viên / Khu vực công cộng — Không có nhà dân</div>' +
+    '</div>';
+
+  document.getElementById('mapCanvas').innerHTML = html;
+  applyFilter();
+}
+
+/* ── Tìm kiếm trên bản đồ ── */
+function searchMap(kw) {
+  kw = kw.trim().toLowerCase();
+  document.querySelectorAll('.hcard').forEach(function(c){ c.classList.remove('hl'); });
+  if (!kw) return;
+  houses.forEach(function(h) {
+    if (h.soNha.toLowerCase().includes(kw) ||
+        h.chuHo.toLowerCase().includes(kw) ||
+        h.duong.toLowerCase().includes(kw)) {
+      var el = document.querySelector('.hcard[data-id="' + h.id + '"]');
+      if (el) el.classList.add('hl');
+    }
+  });
+}
+
+/* ── Lọc bản đồ ── */
+function setFilter(f) {
+  mapFilter = f;
+  document.querySelectorAll('.flt-btn').forEach(function(b){ b.classList.remove('on'); });
+  var mapping = { all:'fb-all', ho_dan:'fb-ho_dan', co_so_kd:'fb-co_so_kd', chu_y:'fb-chu_y' };
+  var btn = document.getElementById(mapping[f]);
+  if (btn) btn.classList.add('on');
+  applyFilter();
+}
+
+function applyFilter() {
+  document.querySelectorAll('.hcard').forEach(function(c) {
+    if (mapFilter === 'all') {
+      c.style.opacity = '1'; c.style.filter = '';
+    } else {
+      if (c.getAttribute('data-loai') === mapFilter) {
+        c.style.opacity = '1'; c.style.filter = '';
+      } else {
+        c.style.opacity = '0.22'; c.style.filter = 'grayscale(1)';
+      }
+    }
+  });
+}
+
+/* =====================================================
+   POPUP CHI TIẾT NHÀ
+===================================================== */
+var TYPE_LBL = {
+  ho_dan:     '🟢 Hộ dân bình thường',
+  co_so_kd:   '🔵 Cơ sở kinh doanh',
+  chu_y:      '🔴 Đối tượng cần chú ý',
+  chua_co_tt: '⚪ Chưa có thông tin'
+};
+var TYPE_BG = {
+  ho_dan:     'rgba(39,174,96,0.15)',
+  co_so_kd:   'rgba(41,128,185,0.15)',
+  chu_y:      'rgba(231,76,60,0.15)',
+  chua_co_tt: 'rgba(149,165,166,0.15)'
+};
+
+function openHouse(id) {
+  var h = houses.find(function(x){ return x.id === id; });
+  if (!h) return;
+  openHouseId = id;
+
+  document.getElementById('mIco').style.background = TYPE_BG[h.loai] || TYPE_BG.ho_dan;
+  document.getElementById('mIco').textContent = ICON[h.loai];
+  document.getElementById('mAddr').textContent = 'Số ' + h.soNha + ' ' + h.duong;
+  document.getElementById('mType').textContent = TYPE_LBL[h.loai] || '';
+
+  var body = '';
+
+  /* Thông tin chủ hộ */
+  body += '<div class="m-sec"><div class="m-stl">👤 Thông tin chủ hộ / đại diện</div>' +
+    '<div class="info-g">' +
+    infoItem('Họ và tên', h.chuHo) +
+    infoItem('Số CCCD', h.cccd || '—') +
+    infoItem('Điện thoại', h.sdt || '—') +
+    infoItem('Số nhân khẩu', h.soNK + ' người') +
+    infoItem('Tạm trú', h.tamTru > 0 ? '<span style="color:#e67e22;font-weight:700">' + h.tamTru + ' người</span>' : 'Không có') +
+    infoItem('Tạm vắng', h.tamVang > 0 ? '<span style="color:#7f8c8d;font-weight:700">' + h.tamVang + ' người</span>' : 'Không có') +
+    '</div></div>';
+
+  /* Danh sách nhân khẩu */
+  if (h.tv && h.tv.length > 0) {
+    body += '<div class="m-sec"><div class="m-stl">👨‍👩‍👧‍👦 Danh sách nhân khẩu</div><div class="mem-list">';
+    h.tv.forEach(function(m, i) {
+      body += '<div class="mem-item">' +
+        '<div class="mem-av">' + (i === 0 ? '👑' : '👤') + '</div>' +
+        '<div><div class="mem-nm">' + m.ten + '</div><div class="mem-rl">' + m.qh + ' &nbsp;•&nbsp; Năm sinh: ' + m.ns + '</div></div>' +
+        '</div>';
+    });
+    body += '</div></div>';
+  }
+
+  /* Cơ sở kinh doanh */
+  if (h.coSoKD) {
+    var b = h.coSoKD;
+    body += '<div class="m-sec"><div class="m-stl">🏢 Thông tin cơ sở kinh doanh</div>' +
+      '<div class="biz-box"><div class="info-g">' +
+      '<div class="info-i" style="grid-column:1/-1">' +
+        '<div class="lbl">Tên đơn vị / cơ sở kinh doanh</div>' +
+        '<div class="val" style="font-size:14px;color:#2980b9">' + b.ten + '</div>' +
+      '</div>' +
+      infoItem('Ngành nghề KD', b.nganhNghe) +
+      infoItem('Số nhân viên', b.nv + ' người') +
+      infoItem('Số giấy phép', b.gp) +
+      infoItem('Ngày hết hạn GP', '<span style="color:#e67e22;font-weight:700">' + b.hetHan + '</span>') +
+      '<div class="info-i" style="grid-column:1/-1">' +
+        '<div class="lbl">Địa điểm kinh doanh</div>' +
+        '<div class="val">' + b.dc + '</div>' +
+      '</div>' +
+      '</div></div></div>';
+  }
+
+  /* Ghi chú */
+  if (h.ghiChu) {
+    var isWarn = h.loai === 'chu_y';
+    body += '<div class="m-sec"><div class="m-stl">' + (isWarn ? '🚨' : '📝') + ' Ghi chú đặc biệt</div>';
+    if (isWarn) body += '<div class="warn-box">' + h.ghiChu + '</div>';
+    else body += '<div style="font-size:12.5px;color:#555;line-height:1.7">' + h.ghiChu + '</div>';
+    body += '</div>';
+  }
+
+  /* Thông tin cập nhật */
+  body += '<div class="m-sec"><div class="m-stl">🕐 Thông tin cập nhật</div>' +
+    '<div class="info-g">' +
+    infoItem('Người cập nhật', h.nguoiCN) +
+    infoItem('Thời gian CN', h.tgCN) +
+    '</div></div>';
+
+  document.getElementById('mBody').innerHTML = body;
+  document.getElementById('houseOvl').classList.add('on');
+}
+
+function infoItem(lbl, val) {
+  return '<div class="info-i"><div class="lbl">' + lbl + '</div><div class="val">' + val + '</div></div>';
+}
+
+function closeHouseModal(e) {
+  if (e && e.target !== document.getElementById('houseOvl')) return;
+  document.getElementById('houseOvl').classList.remove('on');
+}
+
+function openEditFromModal() {
+  closeHouseModal();
+  if (openHouseId) openEdit(openHouseId);
+}
+
+/* =====================================================
+   MODAL THÊM / SỬA
+===================================================== */
+function openAdd() {
+  document.getElementById('editTitle').textContent = 'Thêm hộ dân / Cơ sở mới';
+  ['eNo','eName','eCccd','eSdt','ePop','eNote'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('editOvl').classList.add('on');
+}
+
+function openEdit(id) {
+  var h = houses.find(function(x){ return x.id === id; });
+  if (!h) return;
+  document.getElementById('editTitle').textContent = 'Chỉnh sửa: Số ' + h.soNha + ' ' + h.duong;
+  document.getElementById('eNo').value   = h.soNha;
+  document.getElementById('eRoad').value = h.duong;
+  document.getElementById('eType').value = h.loai;
+  document.getElementById('eSide').value = h.ben;
+  document.getElementById('eName').value = h.chuHo;
+  document.getElementById('eCccd').value = h.cccd;
+  document.getElementById('eSdt').value  = h.sdt;
+  document.getElementById('ePop').value  = h.soNK;
+  document.getElementById('eNote').value = h.ghiChu;
+  document.getElementById('editOvl').classList.add('on');
+}
+
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('editOvl')) return;
+  document.getElementById('editOvl').classList.remove('on');
+}
+
+function saveEdit() {
+  var no   = document.getElementById('eNo').value.trim();
+  var name = document.getElementById('eName').value.trim();
+  if (!no || !name) { toast('Vui lòng điền số nhà và tên chủ hộ!', 'err'); return; }
+  closeEditModal();
+  toast('Đã lưu: Số ' + no + ' ' + document.getElementById('eRoad').value, 'ok');
+  renderList();
+}
+
+/* =====================================================
+   DANH SÁCH HỘ DÂN
+===================================================== */
+var TBADGE = {
+  ho_dan:     '<span class="tbadge g">🏠 Hộ dân</span>',
+  co_so_kd:   '<span class="tbadge b">🏢 Cơ sở KD</span>',
+  chu_y:      '<span class="tbadge r">⚠️ Chú ý</span>',
+  chua_co_tt: '<span class="tbadge x">❓ Chưa có TT</span>'
+};
+
+function renderList() {
+  var tbody = document.getElementById('listTbody');
+  if (!tbody) return;
+  var kw = (document.getElementById('listSearch') ? document.getElementById('listSearch').value.toLowerCase() : '');
+  var ft = (document.getElementById('listFilter') ? document.getElementById('listFilter').value : '');
+
+  var data = houses.filter(function(h) {
+    var ms = !kw || h.chuHo.toLowerCase().includes(kw) || h.soNha.includes(kw) || h.duong.toLowerCase().includes(kw);
+    var mf = !ft || h.loai === ft;
+    return ms && mf;
+  });
+
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:#bbb;font-size:13px">Không tìm thấy kết quả phù hợp</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(function(h, i) {
+    var status = h.loai === 'chu_y'
+      ? '<span style="color:#e74c3c;font-size:11.5px;font-weight:700">⚡ Cần giám sát</span>'
+      : h.loai === 'chua_co_tt'
+      ? '<span style="color:#95a5a6;font-size:11.5px">❓ Chưa XM</span>'
+      : '<span style="color:#27ae60;font-size:11.5px;font-weight:600">✅ Bình thường</span>';
+    return '<tr>' +
+      '<td style="color:#bbb;font-size:11px">' + (i < 9 ? '0' : '') + (i+1) + '</td>' +
+      '<td><strong>' + h.soNha + '</strong></td>' +
+      '<td style="font-size:12px">' + h.duong + '</td>' +
+      '<td><div style="font-weight:700;font-size:12.5px">' + h.chuHo + '</div>' + (h.sdt ? '<div style="font-size:10.5px;color:#aaa">' + h.sdt + '</div>' : '') + '</td>' +
+      '<td>' + (TBADGE[h.loai] || '') + '</td>' +
+      '<td style="text-align:center">' + (h.soNK > 0 ? '<strong>' + h.soNK + '</strong>' : '<span style="color:#ddd">—</span>') + '</td>' +
+      '<td style="text-align:center">' + (h.tamTru > 0 ? '<span style="color:#e67e22;font-weight:700">+' + h.tamTru + '</span>' : '<span style="color:#ddd">—</span>') + '</td>' +
+      '<td>' + status + '</td>' +
+      '<td><button class="act-btn" onclick="openHouse(' + h.id + ')">👁 Xem</button>' +
+           '<button class="act-btn edit" onclick="openEdit(' + h.id + ')">✏️ Sửa</button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+/* =====================================================
+   DASHBOARD — Biểu đồ + Cập nhật gần đây
+===================================================== */
+function renderDashboard() {
+  renderChart();
+  renderRecent();
+}
+
+function renderChart() {
+  var svg = document.getElementById('svgChart');
+  if (!svg) return;
+
+  /* Dữ liệu cột */
+  var nvc  = houses.filter(function(h){ return h.duong === 'Nguyễn Văn Cừ'; });
+  var ll   = houses.filter(function(h){ return h.duong === 'Lê Lợi'; });
+  var bars = [
+    { lbl:'NVC\nHộ dân',  val: nvc.filter(function(h){ return h.loai==='ho_dan'; }).length,     clr:'#27ae60' },
+    { lbl:'NVC\nCơ sở KD',val: nvc.filter(function(h){ return h.loai==='co_so_kd'; }).length,   clr:'#2980b9' },
+    { lbl:'NVC\nChú ý',   val: nvc.filter(function(h){ return h.loai==='chu_y'; }).length,      clr:'#e74c3c' },
+    { lbl:'NVC\nChưa TT', val: nvc.filter(function(h){ return h.loai==='chua_co_tt'; }).length, clr:'#aab3bc' },
+    { lbl:'LL\nHộ dân',   val: ll.filter(function(h){ return h.loai==='ho_dan'; }).length,      clr:'#1e8449' },
+    { lbl:'LL\nCơ sở KD', val: ll.filter(function(h){ return h.loai==='co_so_kd'; }).length,    clr:'#1a5276' }
+  ];
+
+  var maxV = Math.max.apply(null, bars.map(function(b){ return b.val; }).concat([1]));
+  var W = 520, bW = 52, gap = 20;
+  var cH = 130, offX = 42, offY = 18;
+  var content = '';
+
+  /* Grid lines */
+  for (var gi = 0; gi <= maxV; gi++) {
+    var gy = offY + cH - (gi / maxV) * cH;
+    content += '<line x1="' + offX + '" y1="' + gy.toFixed(1) + '" x2="' + (W-10) + '" y2="' + gy.toFixed(1) + '" stroke="#f0f2f5" stroke-width="1"/>';
+    content += '<text x="' + (offX-6) + '" y="' + (gy+4).toFixed(1) + '" text-anchor="end" font-size="10" fill="#bbb">' + gi + '</text>';
+  }
+  /* Trục X */
+  content += '<line x1="' + offX + '" y1="' + (offY+cH) + '" x2="' + (W-10) + '" y2="' + (offY+cH) + '" stroke="#e0e4ea" stroke-width="1.5"/>';
+
+  /* Cột */
+  bars.forEach(function(b, i) {
+    var x   = offX + i * (bW + gap);
+    var bH  = (b.val / maxV) * cH;
+    var y   = offY + cH - bH;
+
+    /* Cột */
+    content += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + bW + '" height="' + bH.toFixed(1) + '" fill="' + b.clr + '" opacity="0.85" rx="5"/>';
+    /* Giá trị */
+    if (b.val > 0) {
+      content += '<text x="' + (x + bW/2) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="800" fill="' + b.clr + '">' + b.val + '</text>';
+    }
+    /* Nhãn (2 dòng) */
+    var lines = b.lbl.split('\n');
+    lines.forEach(function(ln, li) {
+      content += '<text x="' + (x + bW/2) + '" y="' + (offY + cH + 14 + li*12) + '" text-anchor="middle" font-size="9.5" fill="#8898aa">' + ln + '</text>';
+    });
+  });
+
+  /* Chú thích trên chart */
+  var legendX = offX;
+  var legendY = 200;
+  [
+    { clr:'#27ae60', lbl:'Hộ dân' },
+    { clr:'#2980b9', lbl:'Cơ sở KD' },
+    { clr:'#e74c3c', lbl:'Chú ý' },
+    { clr:'#aab3bc', lbl:'Chưa TT' }
+  ].forEach(function(lg, i) {
+    var lx = legendX + i * 110;
+    content += '<rect x="' + lx + '" y="' + (legendY-8) + '" width="10" height="10" fill="' + lg.clr + '" rx="2"/>';
+    content += '<text x="' + (lx+14) + '" y="' + legendY + '" font-size="10" fill="#888">' + lg.lbl + '</text>';
+  });
+
+  svg.innerHTML = content;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' 210');
+}
+
+function renderRecent() {
+  var el = document.getElementById('recentList');
+  if (!el) return;
+  var items = [
+    { clr:'#e74c3c', main:'Cập nhật đối tượng: 7 Nguyễn Văn Cừ', sub:'Kiểm tra định kỳ — Võ Văn Thắng', time:'07:00' },
+    { clr:'#e67e22', main:'Tạm trú mới: 3 Nguyễn Văn Cừ', sub:'1 người chưa xác minh đầy đủ', time:'Hôm qua' },
+    { clr:'#2980b9', main:'Cập nhật GP: Quán Ăn Hương Việt', sub:'7 Lê Lợi — GP hết hạn 20/03/2028', time:'07/09' },
+    { clr:'#27ae60', main:'Kiểm tra VSATTP: 7 Lê Lợi', sub:'Đạt tiêu chuẩn — Không vi phạm', time:'07/09' },
+    { clr:'#95a5a6', main:'Cần xác minh: 9 Nguyễn Văn Cừ', sub:'Nhà bỏ trống — Chưa có thông tin', time:'01/09' }
+  ];
+  el.innerHTML = items.map(function(it) {
+    return '<div class="rc-item">' +
+      '<div class="rc-dot" style="background:' + it.clr + '"></div>' +
+      '<div style="flex:1"><div class="rc-main">' + it.main + '</div><div class="rc-sub">' + it.sub + '</div></div>' +
+      '<div class="rc-time">' + it.time + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+/* =====================================================
+   TOAST NOTIFICATION
+===================================================== */
+var toastTimer = null;
+function toast(msg, type) {
+  var el  = document.getElementById('toastEl');
+  var ico = { ok:'✅', warn:'⚠️', err:'❌' };
+  document.getElementById('toastIco').textContent = ico[type] || '✅';
+  document.getElementById('toastMsg').textContent = msg;
+  el.className = 'toast ' + (type || 'ok');
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3800);
+}
+
+/* =====================================================
+   KHỞI TẠO
+===================================================== */
+document.addEventListener('DOMContentLoaded', function() {
+  /* Phím ESC đóng modal */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.overlay.on').forEach(function(o){ o.classList.remove('on'); });
+      fmCloseAddModal();
+    }
+  });
+});
+
+/* =====================================================
+   BẢN ĐỒ THỰC ĐỊA — Leaflet.js Integration
+===================================================== */
+
+/* ─── Màu sắc theo loại hộ ─── */
+var FM_COLOR = {
+  ho_dan:     { fill:'#4CAF50', fillOpacity:0.60, color:'#2E7D32', weight:2 },
+  co_so_kd:   { fill:'#2196F3', fillOpacity:0.60, color:'#0D47A1', weight:2 },
+  chu_y:      { fill:'#f44336', fillOpacity:0.60, color:'#B71C1C', weight:2 },
+  chua_co_tt: { fill:'#9E9E9E', fillOpacity:0.40, color:'#424242', weight:2 }
+};
+var FM_ICON = { ho_dan:'🏠', co_so_kd:'🏢', chu_y:'⚠️', chua_co_tt:'❓' };
+var FM_LABEL = { ho_dan:'Hộ dân', co_so_kd:'Cơ sở KD', chu_y:'Cần chú ý', chua_co_tt:'Chưa có TT' };
+var FM_CENTER = [10.7769, 106.7009];
+var FM_ZOOM   = 17;
+
+/* ─── Helper: tạo tọa độ hình chữ nhật ─── */
+function fmRect(lat, lng, dlat, dlng) {
+  return [[lat, lng],[lat, lng+dlng],[lat+dlat, lng+dlng],[lat+dlat, lng]];
+}
+
+/* ─── Dữ liệu 31 nhà trên 4 tuyến đường Q.1 TP.HCM ─── */
+var FM_DATA = (function() {
+  var ds = [];
+  var idx = 1;
+
+  /* === NGUYỄN HUỆ — 10 nhà (đường N-S, nhà bên tây) === */
+  var nhStreet = 'Nguyễn Huệ';
+  var nhHouses = [
+    {soNha:'14', loai:'ho_dan',     chuHo:'Nguyễn Văn An',     sdt:'0901.234.567', nk:4, ks:'Hộ dân bình thường'},
+    {soNha:'16', loai:'co_so_kd',   chuHo:'Trần Thị Bích',     sdt:'0902.345.678', nk:3, ks:'Kinh doanh café'},
+    {soNha:'18', loai:'ho_dan',     chuHo:'Lê Văn Cường',      sdt:'0903.456.789', nk:5, ks:'Bình thường'},
+    {soNha:'20', loai:'chu_y',      chuHo:'Phạm Thị Dung',     sdt:'0904.567.890', nk:2, ks:'Đang theo dõi'},
+    {soNha:'22', loai:'co_so_kd',   chuHo:'Hoàng Văn Em',      sdt:'0905.678.901', nk:1, ks:'Kinh doanh tạp hóa'},
+    {soNha:'24', loai:'ho_dan',     chuHo:'Võ Thị Phương',     sdt:'0906.789.012', nk:6, ks:'Bình thường'},
+    {soNha:'26', loai:'chua_co_tt', chuHo:'Chưa xác định',     sdt:'—',            nk:0, ks:'Chưa có thông tin'},
+    {soNha:'28', loai:'ho_dan',     chuHo:'Đỗ Minh Hùng',      sdt:'0908.901.234', nk:3, ks:'Bình thường'},
+    {soNha:'30', loai:'ho_dan',     chuHo:'Bùi Thị Lan',       sdt:'0909.012.345', nk:4, ks:'Bình thường'},
+    {soNha:'32', loai:'co_so_kd',   chuHo:'Ngô Văn Khánh',     sdt:'0910.123.456', nk:2, ks:'Nhà hàng'}
+  ];
+  nhHouses.forEach(function(h, i) {
+    var lat = 10.7755 + i * 0.00018;
+    ds.push({id:'nh'+idx++, soNha:h.soNha, duong:nhStreet, loai:h.loai,
+      chuHo:h.chuHo, sdt:h.sdt, nhanKhau:h.nk, ghiChu:h.ks,
+      toaDo:fmRect(lat, 106.7008, 0.00013, 0.00012)});
+  });
+
+  /* === LÊ LỢI — 8 nhà (đường E-W, nhà bên bắc) === */
+  var llStreet = 'Lê Lợi';
+  var llHouses = [
+    {soNha:'7',  loai:'ho_dan',     chuHo:'Trần Văn Lộc',      sdt:'0911.234.567', nk:3, ks:'Bình thường'},
+    {soNha:'9',  loai:'co_so_kd',   chuHo:'Phạm Thị Mai',      sdt:'0912.345.678', nk:4, ks:'Kinh doanh thời trang'},
+    {soNha:'11', loai:'ho_dan',     chuHo:'Lê Hoàng Nam',      sdt:'0913.456.789', nk:2, ks:'Bình thường'},
+    {soNha:'13', loai:'ho_dan',     chuHo:'Võ Thị Oanh',       sdt:'0914.567.890', nk:5, ks:'Bình thường'},
+    {soNha:'15', loai:'chu_y',      chuHo:'Đặng Văn Phú',      sdt:'0915.678.901', nk:1, ks:'Cần theo dõi'},
+    {soNha:'17', loai:'ho_dan',     chuHo:'Nguyễn Thị Quế',    sdt:'0916.789.012', nk:4, ks:'Bình thường'},
+    {soNha:'19', loai:'chua_co_tt', chuHo:'Chưa xác định',     sdt:'—',            nk:0, ks:'Chưa có thông tin'},
+    {soNha:'21', loai:'ho_dan',     chuHo:'Huỳnh Văn Sơn',     sdt:'0918.901.234', nk:3, ks:'Bình thường'}
+  ];
+  llHouses.forEach(function(h, i) {
+    var lng = 106.6990 + i * 0.00016;
+    ds.push({id:'ll'+idx++, soNha:h.soNha, duong:llStreet, loai:h.loai,
+      chuHo:h.chuHo, sdt:h.sdt, nhanKhau:h.nk, ghiChu:h.ks,
+      toaDo:fmRect(10.7762, lng, 0.00014, 0.00012)});
+  });
+
+  /* === ĐỒNG KHỞI — 7 nhà (đường N-S, nhà bên tây) === */
+  var dkStreet = 'Đồng Khởi';
+  var dkHouses = [
+    {soNha:'5',  loai:'co_so_kd',   chuHo:'Trương Thị Tâm',    sdt:'0919.012.345', nk:2, ks:'Khách sạn mini'},
+    {soNha:'7',  loai:'ho_dan',     chuHo:'Đinh Văn Tuấn',     sdt:'0920.123.456', nk:4, ks:'Bình thường'},
+    {soNha:'9',  loai:'ho_dan',     chuHo:'Lý Thị Uyên',       sdt:'0921.234.567', nk:3, ks:'Bình thường'},
+    {soNha:'11', loai:'chu_y',      chuHo:'Phan Văn Vinh',     sdt:'0922.345.678', nk:2, ks:'Đang theo dõi'},
+    {soNha:'13', loai:'co_so_kd',   chuHo:'Bạch Thị Xuân',     sdt:'0923.456.789', nk:1, ks:'Spa & làm đẹp'},
+    {soNha:'15', loai:'ho_dan',     chuHo:'Cao Văn Ý',         sdt:'0924.567.890', nk:5, ks:'Bình thường'},
+    {soNha:'17', loai:'ho_dan',     chuHo:'Đoàn Thị Yến',      sdt:'0925.678.901', nk:3, ks:'Bình thường'}
+  ];
+  dkHouses.forEach(function(h, i) {
+    var lat = 10.7758 + i * 0.00017;
+    ds.push({id:'dk'+idx++, soNha:h.soNha, duong:dkStreet, loai:h.loai,
+      chuHo:h.chuHo, sdt:h.sdt, nhanKhau:h.nk, ghiChu:h.ks,
+      toaDo:fmRect(lat, 106.7028, 0.00012, 0.00013)});
+  });
+
+  /* === NGUYỄN DU — 6 nhà (đường E-W, nhà bên bắc) === */
+  var ndStreet = 'Nguyễn Du';
+  var ndHouses = [
+    {soNha:'3',  loai:'ho_dan',     chuHo:'Hà Thị Hằng',       sdt:'0926.789.012', nk:4, ks:'Bình thường'},
+    {soNha:'5',  loai:'chua_co_tt', chuHo:'Chưa xác định',     sdt:'—',            nk:0, ks:'Chưa có thông tin'},
+    {soNha:'7',  loai:'co_so_kd',   chuHo:'Lưu Văn Khoa',      sdt:'0928.901.234', nk:3, ks:'Văn phòng công ty'},
+    {soNha:'9',  loai:'ho_dan',     chuHo:'Mã Thị Linh',       sdt:'0929.012.345', nk:2, ks:'Bình thường'},
+    {soNha:'11', loai:'ho_dan',     chuHo:'Nguyễn Văn Mạnh',   sdt:'0930.123.456', nk:5, ks:'Bình thường'},
+    {soNha:'13', loai:'ho_dan',     chuHo:'Ông Thị Ngọc',      sdt:'0931.234.567', nk:3, ks:'Bình thường'}
+  ];
+  ndHouses.forEach(function(h, i) {
+    var lng = 106.7013 + i * 0.00016;
+    ds.push({id:'nd'+idx++, soNha:h.soNha, duong:ndStreet, loai:h.loai,
+      chuHo:h.chuHo, sdt:h.sdt, nhanKhau:h.nk, ghiChu:h.ks,
+      toaDo:fmRect(10.7748, lng, 0.00013, 0.00011)});
+  });
+
+  return ds;
+})();
+
+/* ─── Trạng thái map ─── */
+var fmMap = null;
+var fmInited = false;
+var fmLayers = {};        // id → polygon layer
+var fmVisible = { ho_dan:true, co_so_kd:true, chu_y:true, chua_co_tt:true };
+var fmCurFilter = 'all';
+var fmActiveId = null;
+var fmNewLatLng = null;
+var fmClusterLayers = [];
+var fmCurrentZoom = FM_ZOOM;
+
+/* ─── Khởi tạo bản đồ ─── */
+function initFieldMap() {
+  /* Nếu đã có map, chỉ invalidateSize */
+  if (fmInited && fmMap) {
+    setTimeout(function() { fmMap.invalidateSize(); }, 200);
+    return;
+  }
+
+  /* Hiện loading + progress */
+  var loadEl = document.getElementById('fmLoading');
+  var progEl = document.getElementById('fmProgress');
+  if (loadEl) loadEl.style.display = 'flex';
+
+  var prog = 0;
+  var progTimer = setInterval(function() {
+    prog = Math.min(prog + (Math.random() * 18 + 8), 95);
+    if (progEl) progEl.style.width = prog + '%';
+  }, 100);
+
+  setTimeout(function() {
+    clearInterval(progTimer);
+    if (progEl) progEl.style.width = '100%';
+
+    setTimeout(function() {
+      if (loadEl) loadEl.style.display = 'none';
+      fmInited = true;
+      fmBuildMap();
+    }, 250);
+  }, 1500);
+}
+
+function fmBuildMap() {
+  var mapEl = document.getElementById('fmMap');
+  if (!mapEl) return;
+
+  fmMap = L.map('fmMap', {
+    center: FM_CENTER,
+    zoom: FM_ZOOM,
+    minZoom: 15,
+    maxZoom: 19,
+    zoomControl: false
+  });
+
+  /* Tile layer OpenStreetMap */
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(fmMap);
+
+  /* Zoom control — vị trí bottom-right */
+  L.control.zoom({ position: 'bottomright' }).addTo(fmMap);
+
+  /* Scale bar — bottom-left */
+  L.control.scale({ position: 'bottomleft', metric: true, imperial: false }).addTo(fmMap);
+
+  /* Vẽ tất cả polygon nhà */
+  FM_DATA.forEach(function(d) {
+    fmAddPolygon(d);
+  });
+
+  /* Double-click: thêm địa điểm mới */
+  fmMap.on('dblclick', function(e) {
+    fmNewLatLng = e.latlng;
+    document.getElementById('fmAddModal').classList.add('open');
+    document.getElementById('fmAddSoNha').focus();
+    fmMap.doubleClickZoom.disable();
+    setTimeout(function() { fmMap.doubleClickZoom.enable(); }, 500);
+  });
+
+  /* Clustering khi zoom thay đổi */
+  fmMap.on('zoomend', function() {
+    fmCurrentZoom = fmMap.getZoom();
+    fmUpdateClusters();
+  });
+
+  /* Click vùng trống bỏ highlight */
+  fmMap.on('click', function() {
+    fmClearActive();
+  });
+
+  /* Build panel list */
+  fmBuildList();
+  fmUpdateLegend();
+  fmCurrentZoom = FM_ZOOM;
+  fmUpdateClusters();
+}
+
+/* ─── Thêm polygon cho 1 nhà ─── */
+function fmAddPolygon(d) {
+  var col = FM_COLOR[d.loai] || FM_COLOR.ho_dan;
+  var poly = L.polygon(d.toaDo, {
+    fillColor: col.fill,
+    fillOpacity: col.fillOpacity,
+    color: col.color,
+    weight: col.weight
+  });
+
+  /* Tooltip hover */
+  poly.bindTooltip(
+    '<strong>Số ' + d.soNha + '</strong> — ' + d.duong + '<br>' + d.chuHo,
+    { sticky: true, className: 'fm-tooltip' }
+  );
+
+  /* Hover effects */
+  poly.on('mouseover', function() {
+    if (fmActiveId !== d.id) {
+      poly.setStyle({ color:'#f0c040', weight:3, fillOpacity: (col.fillOpacity + 0.15) });
+    }
+  });
+  poly.on('mouseout', function() {
+    if (fmActiveId !== d.id) {
+      poly.setStyle({ color: col.color, weight: col.weight, fillOpacity: col.fillOpacity });
+    }
+  });
+
+  /* Click: flyTo + popup */
+  poly.on('click', function(e) {
+    L.DomEvent.stopPropagation(e);
+    fmSelectPolygon(d, poly);
+  });
+
+  fmLayers[d.id] = poly;
+  if (fmMap && fmVisible[d.loai]) poly.addTo(fmMap);
+}
+
+/* ─── Chọn polygon (click/flyTo/popup) ─── */
+function fmSelectPolygon(d, poly) {
+  /* Bỏ highlight cũ */
+  fmClearActive();
+  fmActiveId = d.id;
+
+  /* Highlight mới */
+  var col = FM_COLOR[d.loai] || FM_COLOR.ho_dan;
+  poly.setStyle({ color:'#f0c040', weight:4, fillOpacity: Math.min(col.fillOpacity + 0.25, 0.9) });
+
+  /* FlyTo animation */
+  var center = poly.getBounds().getCenter();
+  fmMap.flyTo(center, Math.max(fmMap.getZoom(), 18), { animate: true, duration: 1.0 });
+
+  /* Pulse effect 3 lần */
+  fmPulsePolygon(d.id);
+
+  /* Popup */
+  var hdrColor = col.fill;
+  var ico = FM_ICON[d.loai];
+  var nkTxt = d.nhanKhau > 0 ? d.nhanKhau + ' người' : '—';
+  var popupHtml = '<div class="fm-popup">'
+    + '<div class="fm-popup-hdr" style="background:' + hdrColor + '">'
+    + '<span class="fm-popup-ico">' + ico + '</span>'
+    + '<span class="fm-popup-title">Số ' + d.soNha + ' — ' + d.duong + '</span>'
+    + '</div>'
+    + '<div class="fm-popup-row"><span class="fm-popup-lbl">👤 Chủ hộ:</span><span class="fm-popup-val">' + d.chuHo + '</span></div>'
+    + '<div class="fm-popup-row"><span class="fm-popup-lbl">📞 SĐT:</span><span class="fm-popup-val">' + d.sdt + '</span></div>'
+    + '<div class="fm-popup-row"><span class="fm-popup-lbl">👨‍👩‍👧 Nhân khẩu:</span><span class="fm-popup-val">' + nkTxt + '</span></div>'
+    + '<div class="fm-popup-row"><span class="fm-popup-lbl">🏷️ Loại:</span><span class="fm-popup-val">' + FM_LABEL[d.loai] + '</span></div>'
+    + '<div class="fm-popup-row"><span class="fm-popup-lbl">📝 Ghi chú:</span><span class="fm-popup-val">' + d.ghiChu + '</span></div>'
+    + '<div class="fm-popup-sep"></div>'
+    + '<div class="fm-popup-btns">'
+    + '<button class="fm-popup-btn secondary" onclick="fmViewDetail(\'' + d.id + '\')">📋 Xem chi tiết</button>'
+    + '<button class="fm-popup-btn primary" onclick="toast(\'Tính năng cập nhật đang phát triển\',\'info\')">✏️ Cập nhật</button>'
+    + '</div></div>';
+
+  L.popup({ maxWidth: 280, className: 'fm-leaflet-popup' })
+    .setLatLng(center)
+    .setContent(popupHtml)
+    .openOn(fmMap);
+
+  /* Highlight danh sách */
+  document.querySelectorAll('.fm-list-item').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.id === d.id);
+  });
+}
+
+/* ─── Bỏ highlight ─── */
+function fmClearActive() {
+  if (fmActiveId && fmLayers[fmActiveId]) {
+    var oldD = FM_DATA.find(function(x){ return x.id === fmActiveId; });
+    if (oldD) {
+      var c = FM_COLOR[oldD.loai] || FM_COLOR.ho_dan;
+      fmLayers[fmActiveId].setStyle({ color: c.color, weight: c.weight, fillOpacity: c.fillOpacity });
+    }
+  }
+  fmActiveId = null;
+  document.querySelectorAll('.fm-list-item').forEach(function(el){ el.classList.remove('active'); });
+}
+
+/* ─── Pulse effect 3 lần ─── */
+function fmPulsePolygon(id) {
+  var poly = fmLayers[id];
+  if (!poly) return;
+  var count = 0;
+  var orig = poly.options.fillOpacity;
+  var timer = setInterval(function() {
+    count++;
+    poly.setStyle({ fillOpacity: count % 2 === 0 ? orig : 0.15 });
+    if (count >= 6) {
+      clearInterval(timer);
+      if (fmActiveId === id) poly.setStyle({ fillOpacity: orig });
+    }
+  }, 200);
+}
+
+/* ─── Xem chi tiết (gọi modal cũ) ─── */
+function fmViewDetail(id) {
+  fmMap.closePopup();
+  var d = FM_DATA.find(function(x){ return x.id === id; });
+  if (!d) return;
+  /* Dùng modal hiện có nếu có dữ liệu matching, hoặc hiện toast */
+  toast('Số ' + d.soNha + ' — ' + d.duong + ' · ' + d.chuHo, 'info');
+}
+
+/* ─── Build danh sách panel trái ─── */
+function fmBuildList() {
+  var kw = (document.getElementById('fmPanelSearch') || {}).value || '';
+  kw = kw.trim().toLowerCase();
+  var filter = fmCurFilter;
+  var list = document.getElementById('fmList');
+  if (!list) return;
+
+  var filtered = FM_DATA.filter(function(d) {
+    if (filter !== 'all' && d.loai !== filter) return false;
+    if (kw && d.soNha.toLowerCase().indexOf(kw) < 0 &&
+        d.chuHo.toLowerCase().indexOf(kw) < 0 &&
+        d.duong.toLowerCase().indexOf(kw) < 0) return false;
+    return true;
+  });
+
+  var cntEl = document.getElementById('fmCount');
+  if (cntEl) cntEl.textContent = filtered.length;
+
+  list.innerHTML = filtered.map(function(d) {
+    var col = FM_COLOR[d.loai] || FM_COLOR.ho_dan;
+    return '<div class="fm-list-item" data-id="' + d.id + '" onclick="fmPanelClick(\'' + d.id + '\')">'
+      + '<span class="fm-li-dot" style="background:' + col.fill + '"></span>'
+      + '<div class="fm-li-body">'
+      + '<div class="fm-li-addr">Số ' + d.soNha + ' — ' + d.duong + '</div>'
+      + '<div class="fm-li-sub">' + d.chuHo + (d.nhanKhau > 0 ? ' · ' + d.nhanKhau + ' người' : '') + '</div>'
+      + '</div>'
+      + '<button class="fm-li-go" onclick="event.stopPropagation();fmGoTo(\'' + d.id + '\')" title="Đến vị trí">→</button>'
+      + '</div>';
+  }).join('');
+}
+
+/* ─── Panel: click item → flyTo (không mở popup) ─── */
+function fmPanelClick(id) {
+  var d = FM_DATA.find(function(x){ return x.id === id; });
+  var poly = fmLayers[id];
+  if (!d || !poly) return;
+  fmMap.flyTo(poly.getBounds().getCenter(), Math.max(fmMap.getZoom(), 18), { animate: true, duration: 1.0 });
+  document.querySelectorAll('.fm-list-item').forEach(function(el){ el.classList.toggle('active', el.dataset.id === id); });
+  fmBlinkSearch(id);
+}
+
+/* ─── Nút [→ Đến]: flyTo + mở popup ─── */
+function fmGoTo(id) {
+  var d = FM_DATA.find(function(x){ return x.id === id; });
+  var poly = fmLayers[id];
+  if (!d || !poly) return;
+  fmSelectPolygon(d, poly);
+}
+
+/* ─── Blink animation: nhấp nháy vàng 3 lần ─── */
+function fmBlinkSearch(id) {
+  var poly = fmLayers[id];
+  if (!poly) return;
+  var n = 0;
+  var t = setInterval(function() {
+    n++;
+    poly.setStyle({ color: n % 2 === 0 ? (FM_COLOR[(FM_DATA.find(function(x){return x.id===id;})||{}).loai] || FM_COLOR.ho_dan).color : '#f0c040', weight: n % 2 === 0 ? 2 : 4 });
+    if (n >= 6) clearInterval(t);
+  }, 280);
+}
+
+/* ─── Panel filter radio ─── */
+function fmPanelFilter(val) {
+  fmCurFilter = val;
+  fmBuildList();
+}
+
+/* ─── Panel search ─── */
+function fmPanelSearch(val) {
+  fmBuildList();
+}
+
+/* ─── Toolbar: tìm kiếm trên bản đồ ─── */
+function fmMapSearch(val) {
+  val = val.trim().toLowerCase();
+  if (!val) { /* reset opacity */
+    Object.keys(fmLayers).forEach(function(id) {
+      var d = FM_DATA.find(function(x){ return x.id === id; });
+      if (d) fmLayers[id].setStyle({ fillOpacity: FM_COLOR[d.loai].fillOpacity, opacity: 1 });
+    });
+    return;
+  }
+  Object.keys(fmLayers).forEach(function(id) {
+    var d = FM_DATA.find(function(x){ return x.id === id; });
+    if (!d) return;
+    var match = d.soNha.toLowerCase().indexOf(val) >= 0 ||
+                d.chuHo.toLowerCase().indexOf(val) >= 0 ||
+                d.duong.toLowerCase().indexOf(val) >= 0;
+    if (match) {
+      fmLayers[id].setStyle({ fillOpacity: FM_COLOR[d.loai].fillOpacity + 0.2, opacity: 1 });
+      fmBlinkSearch(id);
+      fmMap.flyTo(fmLayers[id].getBounds().getCenter(), 18, { animate: true, duration: 1 });
+    } else {
+      fmLayers[id].setStyle({ fillOpacity: 0.12, opacity: 0.35 });
+    }
+  });
+}
+
+/* ─── Toolbar: dropdown lọc loại ─── */
+function fmMapFilter(val) {
+  Object.keys(fmLayers).forEach(function(id) {
+    var d = FM_DATA.find(function(x){ return x.id === id; });
+    if (!d) return;
+    var show = val === 'all' || d.loai === val;
+    fmLayers[id].setStyle({
+      fillOpacity: show ? FM_COLOR[d.loai].fillOpacity : 0.1,
+      opacity: show ? 1 : 0.25
+    });
+  });
+}
+
+/* ─── Toggle ẩn/hiện nhóm ─── */
+function fmToggleType(loai) {
+  fmVisible[loai] = !fmVisible[loai];
+  var btnMap = { ho_dan:'fmBtnHD', co_so_kd:'fmBtnKD', chu_y:'fmBtnCY' };
+  var btnId = btnMap[loai];
+  if (btnId) {
+    var btn = document.getElementById(btnId);
+    if (btn) btn.classList.toggle('tog-off', !fmVisible[loai]);
+  }
+  var legId = { ho_dan:'fmLegItemHD', co_so_kd:'fmLegItemKD', chu_y:'fmLegItemCY', chua_co_tt:'fmLegItemUT' };
+  var legEl = document.getElementById(legId[loai]);
+  if (legEl) legEl.classList.toggle('hidden-group', !fmVisible[loai]);
+
+  Object.keys(fmLayers).forEach(function(id) {
+    var d = FM_DATA.find(function(x){ return x.id === id; });
+    if (!d || d.loai !== loai || !fmMap) return;
+    if (fmVisible[loai]) fmLayers[id].addTo(fmMap);
+    else fmMap.removeLayer(fmLayers[id]);
+  });
+  fmUpdateClusters();
+}
+
+/* ─── Reset về vị trí mặc định ─── */
+function fmResetView() {
+  if (fmMap) fmMap.flyTo(FM_CENTER, FM_ZOOM, { animate: true, duration: 1 });
+  fmClearActive();
+  if (fmMap) fmMap.closePopup();
+}
+
+/* ─── Thống kê nhanh ─── */
+function fmShowStats() {
+  var box = document.getElementById('fmStatsBox');
+  if (!box) return;
+  box.classList.toggle('open');
+  if (!box.classList.contains('open')) return;
+  var counts = { ho_dan:0, co_so_kd:0, chu_y:0, chua_co_tt:0 };
+  FM_DATA.forEach(function(d) { counts[d.loai] = (counts[d.loai]||0) + 1; });
+  document.getElementById('fmStatsContent').innerHTML =
+    '<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span>🏠 Hộ dân:</span><strong>' + counts.ho_dan + '</strong></div>' +
+    '<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span>🏢 Cơ sở KD:</span><strong>' + counts.co_so_kd + '</strong></div>' +
+    '<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span>⚠️ Cần chú ý:</span><strong>' + counts.chu_y + '</strong></div>' +
+    '<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span>❓ Chưa có TT:</span><strong>' + counts.chua_co_tt + '</strong></div>' +
+    '<hr style="margin:6px 0;border:none;border-top:1px solid #e8edf5">' +
+    '<div style="display:flex;justify-content:space-between;gap:12px;font-weight:800;color:var(--navy)"><span>Tổng cộng:</span><strong>' + FM_DATA.length + '</strong></div>';
+}
+
+/* ─── Toggle panel trái ─── */
+function fmTogglePanel() {
+  var panel = document.getElementById('fmPanel');
+  if (panel) {
+    panel.classList.toggle('collapsed');
+    setTimeout(function() { if (fmMap) fmMap.invalidateSize(); }, 310);
+  }
+}
+
+/* ─── Fullscreen ─── */
+function fmFullscreen() {
+  var el = document.getElementById('page-fieldmap');
+  if (!el) return;
+  if (!document.fullscreenElement) {
+    el.requestFullscreen && el.requestFullscreen();
+  } else {
+    document.exitFullscreen && document.exitFullscreen();
+  }
+  setTimeout(function() { if (fmMap) fmMap.invalidateSize(); }, 500);
+}
+
+/* ─── Chụp màn hình (giả lập) ─── */
+function fmScreenshot() {
+  toast('📸 Đã lưu ảnh bản đồ vào thư mục Tải xuống!', 'success');
+}
+
+/* ─── Update legend counts ─── */
+function fmUpdateLegend() {
+  var counts = { ho_dan:0, co_so_kd:0, chu_y:0, chua_co_tt:0 };
+  FM_DATA.forEach(function(d) { counts[d.loai] = (counts[d.loai]||0) + 1; });
+  var el = function(id) { return document.getElementById(id); };
+  if (el('fmLegHD'))    el('fmLegHD').textContent    = counts.ho_dan;
+  if (el('fmLegKD'))    el('fmLegKD').textContent    = counts.co_so_kd;
+  if (el('fmLegCY'))    el('fmLegCY').textContent    = counts.chu_y;
+  if (el('fmLegUT'))    el('fmLegUT').textContent    = counts.chua_co_tt;
+  if (el('fmLegTotal')) el('fmLegTotal').textContent = FM_DATA.length;
+}
+
+/* ─── Clustering: gộp nhà gần nhau khi zoom < 16 ─── */
+function fmUpdateClusters() {
+  if (!fmMap) return;
+  /* Xóa clusters cũ */
+  fmClusterLayers.forEach(function(l) { fmMap.removeLayer(l); });
+  fmClusterLayers = [];
+
+  if (fmCurrentZoom >= 16) {
+    /* Zoom đủ lớn: hiện tất cả polygon bình thường */
+    Object.keys(fmLayers).forEach(function(id) {
+      var d = FM_DATA.find(function(x){ return x.id === id; });
+      if (d && fmVisible[d.loai]) fmLayers[id].addTo(fmMap);
+    });
+    return;
+  }
+
+  /* Zoom nhỏ: ẩn polygon, hiện cluster circles */
+  Object.keys(fmLayers).forEach(function(id) { fmMap.removeLayer(fmLayers[id]); });
+
+  /* Tính toán cluster đơn giản theo đường phố */
+  var streets = {};
+  FM_DATA.forEach(function(d) {
+    if (!fmVisible[d.loai]) return;
+    streets[d.duong] = streets[d.duong] || [];
+    streets[d.duong].push(d);
+  });
+
+  Object.keys(streets).forEach(function(street) {
+    var group = streets[street];
+    if (!group.length) return;
+    /* Tính trung tâm cluster */
+    var lat = group.reduce(function(sum, d) { return sum + d.toaDo[0][0]; }, 0) / group.length;
+    var lng = group.reduce(function(sum, d) { return sum + d.toaDo[0][1]; }, 0) / group.length;
+    lat += 0.00006; lng += 0.00006;
+
+    var size = Math.min(36 + group.length * 3, 56);
+    var icon = L.divIcon({
+      className: '',
+      html: '<div class="fm-cluster-circle" style="width:' + size + 'px;height:' + size + 'px;background:#1a2744;color:white;font-size:' + (size > 44 ? '14' : '12') + 'px;">' + group.length + '</div>',
+      iconSize: [size, size],
+      iconAnchor: [size/2, size/2]
+    });
+    var marker = L.marker([lat, lng], { icon: icon });
+    marker.bindTooltip(street + ': ' + group.length + ' địa điểm', { sticky: true });
+    marker.on('click', function() { fmMap.flyTo([lat, lng], 17, { animate: true, duration: 1 }); });
+    marker.addTo(fmMap);
+    fmClusterLayers.push(marker);
+  });
+}
+
+/* ─── Modal thêm địa điểm mới ─── */
+function fmSaveNewLocation() {
+  var soNha   = (document.getElementById('fmAddSoNha') || {}).value || '';
+  var chuHo   = (document.getElementById('fmAddChuHo') || {}).value || '';
+  var loai    = (document.getElementById('fmAddLoai') || {}).value || 'ho_dan';
+  var ghiChu  = (document.getElementById('fmAddGhiChu') || {}).value || '';
+
+  if (!soNha.trim() || !chuHo.trim()) {
+    toast('Vui lòng điền đầy đủ Số nhà và Tên chủ hộ!', 'warn');
+    return;
+  }
+  if (!fmNewLatLng) return;
+
+  var lat = fmNewLatLng.lat, lng = fmNewLatLng.lng;
+  var newD = {
+    id: 'new' + Date.now(),
+    soNha: soNha.trim(), duong: 'Vị trí mới', loai: loai,
+    chuHo: chuHo.trim(), sdt: '—', nhanKhau: 0, ghiChu: ghiChu || 'Vừa thêm',
+    toaDo: fmRect(lat, lng, 0.00013, 0.00012)
+  };
+
+  FM_DATA.push(newD);
+  fmAddPolygon(newD);
+  fmBuildList();
+  fmUpdateLegend();
+  fmCloseAddModal();
+  toast('✅ Đã thêm địa điểm Số ' + soNha + ' vào bản đồ!', 'success');
+
+  /* Fly đến vị trí vừa thêm */
+  setTimeout(function() {
+    var poly = fmLayers[newD.id];
+    if (poly) fmSelectPolygon(newD, poly);
+  }, 300);
+}
+
+function fmCloseAddModal() {
+  var modal = document.getElementById('fmAddModal');
+  if (modal) modal.classList.remove('open');
+  var fields = ['fmAddSoNha','fmAddChuHo','fmAddGhiChu'];
+  fields.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+}
+</script>
+</body>
+</html>
